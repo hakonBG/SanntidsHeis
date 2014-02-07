@@ -1,8 +1,8 @@
-package main
+package UDP
 
 import (
 	. "fmt"
-	. "net"
+	"net"
 	"runtime"
 	"time"
 	//. "strings"
@@ -23,74 +23,55 @@ func check_error(err error) {
 
 }
 
-func set_up_udp_readsocket(udpReadChannel chan *UDPConn) {
+func set_up_udp_readsocket(udpReadChannel chan *net.UDPConn, port string) {
 	Println("Setup Readsocket")
 
-	udpReadAddress, err := ResolveUDPAddr(CONN_TYPE, CONN_HOST+":"+READ_PORT)
+	udpReadAddress, err := net.ResolveUDPAddr(CONN_TYPE, CONN_HOST+":"+port)
 	check_error(err)
-	udpRead, err := ListenUDP(CONN_TYPE, udpReadAddress)
+	udpRead, err := net.ListenUDP(CONN_TYPE, udpReadAddress)
 	check_error(err)
 	Println("read fin")
 	udpReadChannel <- udpRead
 
 }
 
-func set_up_udp_broadcastsocket(udpBroadcastChannel chan *UDPConn) {
+func set_up_udp_broadcastsocket(udpBroadcastChannel chan *net.UDPConn, port string) {
 	Println("Setup Broadsocket")
 
-	udpBroadcastAddress, err := ResolveUDPAddr(CONN_TYPE, CONN_HOST+":"+READ_PORT)
+	udpBroadcastAddress, err := net.ResolveUDPAddr(CONN_TYPE, CONN_HOST+":"+port)
 	check_error(err)
-	udpBroadcast, err := DialUDP(CONN_TYPE, nil, udpBroadcastAddress)
+	udpBroadcast, err := net.DialUDP(CONN_TYPE, nil, udpBroadcastAddress)
 	check_error(err)
 	udpBroadcastChannel <- udpBroadcast
 	Println("BroadFin")
 
 }
 
-func udp_receive_msg(udpReadChannel chan *UDPConn) {
-	for {
+func udp_receive_msg(udpReadChannel chan *net.UDPConn, udpMsgChannel chan []byte) {
 
-		udpTempConn := <-udpReadChannel
-		Println("Feil 1")
-		msg := make([]byte, 1024)
-		Println("Venter pa melding")
-		_, _, err := udpTempConn.ReadFromUDP(msg)
-		check_error(err)
-
-		Println("melding mottatt:")
-		Printf("%s \n", msg)
-		udpReadChannel <- udpTempConn
+	udpTempConn := <-udpReadChannel
+	msg := make([]byte, 1024)
+	_, _, err := udpTempConn.ReadFromUDP(msg)
+	check_error(err)
+	Println("melding mottatt:")
+	udpReadChannel <- udpTempConn
+	select {
+	case udpMsgChannel <- msg:
 	}
 
 }
-func udp_send_msg(udpBroadcastChannel chan *UDPConn) {
+func udp_send_msg(udpBroadcastChannel chan *net.UDPConn, msg []byte) {
 	udpTempConn := <-udpBroadcastChannel
-	Println("UDPbroadcast, " + udpTempConn.RemoteAddr().String())
-	msg := []byte("Fy faen det funker\x00")
 	_, err := udpTempConn.Write(msg)
 	check_error(err)
-	Println("Melding sendt")
 	udpBroadcastChannel <- udpTempConn
-
-}
-
-func udp_spam_routine(udpBroadcastChannel chan *UDPConn) {
-
-	time1 := time.Now()
-	for {
-		time2 := time.Now()
-		if time2.Second()-time1.Second() >= 1 {
-			udp_send_msg(udpBroadcastChannel)
-			time1 = time.Now()
-		}
-	}
 
 }
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	udpReadChannel := make(chan *UDPConn, 1)
-	udpBroadcastChannel := make(chan *UDPConn, 1)
+	udpReadChannel := make(chan *net.UDPConn, 1)
+	udpBroadcastChannel := make(chan *net.UDPConn, 1)
 	exit := make(chan int)
 	//b := []byte("Hva skjer?")
 	set_up_udp_readsocket(udpReadChannel)
