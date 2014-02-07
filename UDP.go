@@ -60,6 +60,7 @@ func udp_receive_msg(udpReadChannel chan *net.UDPConn, udpMsgChannel chan []byte
 	}
 
 }
+
 func udp_send_msg(udpBroadcastChannel chan *net.UDPConn, msg []byte) {
 	udpTempConn := <-udpBroadcastChannel
 	_, err := udpTempConn.Write(msg)
