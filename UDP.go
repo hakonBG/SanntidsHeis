@@ -69,6 +69,7 @@ func udp_send_msg(udpBroadcastChannel chan *net.UDPConn, msg []byte) {
 
 }
 
+/*
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	udpReadChannel := make(chan *net.UDPConn, 1)
@@ -82,3 +83,4 @@ func main() {
 	<-exit
 
 }
+*/
