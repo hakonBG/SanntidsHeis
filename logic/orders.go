@@ -5,42 +5,102 @@ import (
 	"fmt"
 )
 
+type call_type_t int
+type order_type_t int
+
 const (
-	N_BUTTONTYPES = 3
-	LAMP_ON       = 1
-	LAMP_OFF      = 0
+	N_BUTTONTYPES       = 3
+	N_GLOBALBUTTONTYPES = 2
+	LAMP_ON             = 1
+	LAMP_OFF            = 0
 )
 
-func Handle_orders(orderChan chan Order_call_s, passOrders chan chan [3][4]int) {
+const (
+	ADD_ORDER order_type_t = iota
+	REMOVE_ORDER
+)
+
+type Order_call_s struct {
+	orderType  order_type_t
+	buttonType driver.Elev_button_type_t
+	floor      int
+}
+
+type Orders_s struct {
+	globalOrders [N_GLOBALBUTTONTYPES][N_FLOORS]int
+	localOrders  [N_BUTTONTYPES][N_FLOORS]int
+}
+
+func Handle_orders(orderChan chan Order_call_s, passOrders chan chan Orders_s) {
 	var orderCall Order_call_s
-	passOrdersChan := make(chan [3][4]int)
-	orders := init_orders()
+	var orders Orders_s
+	passOrdersChan := make(chan Orders_s)
+	orders.localOrders = init_localOrders()
+	orders.globalOrders = init_globalOrders()
 	for {
 		select {
 		case orderCall = <-orderChan:
 			if orderCall.orderType == REMOVE_ORDER {
-				orders[orderCall.buttonType][orderCall.floor] = 0
-				driver.Elev_set_button_lamp(orderCall.buttonType, orderCall.floor, LAMP_OFF)
-
+				orders.localOrders[orderCall.buttonType][orderCall.floor] = 0
+				orders.localOrders[BUTTON_COMMAND][orderCall.floor] = 0
+				fmt.Println("Remove Order")
 			} else if orderCall.orderType == ADD_ORDER {
-				orders[orderCall.buttonType][orderCall.floor] = 1
-				driver.Elev_set_button_lamp(orderCall.buttonType, orderCall.floor, LAMP_ON)
+
+				if orderCall.buttonType == driver.BUTTON_CALL_UP || orderCall.buttonType == driver.BUTTON_CALL_DOWN {
+					orders.localOrders[orderCall.buttonType][orderCall.floor] = 1
+					fmt.Println("Legger til GLOBAL")
+				} else {
+					orders.localOrders[orderCall.buttonType][orderCall.floor] = 1
+					fmt.Println("legger til command!!")
+				}
+
 			}
 		case passOrdersChan = <-passOrders:
-			fmt.Println("orders")
+			fmt.Println("Passing orders")
 			passOrdersChan <- orders
 		}
+
 	}
 
 }
 
-func init_orders() [3][4]int {
-	var orders [3][4]int
+func init_localOrders() [N_BUTTONTYPES][N_FLOORS]int {
+	var localOrders [N_BUTTONTYPES][N_FLOORS]int
 	for i := 0; i < N_BUTTONTYPES; i++ {
 		for j := 0; j < N_FLOORS; j++ {
-			orders[i][j] = 0
+			localOrders[i][j] = 0
 		}
 
 	}
-	return orders
+	return localOrders
+}
+func init_globalOrders() [N_GLOBALBUTTONTYPES][N_FLOORS]int {
+	var globalOrders [N_GLOBALBUTTONTYPES][N_FLOORS]int
+	for i := 0; i < N_GLOBALBUTTONTYPES; i++ {
+		for j := 0; j < N_FLOORS; j++ {
+			globalOrders[i][j] = 0
+		}
+
+	}
+	return globalOrders
+
+}
+
+func print_orders(orders Orders_s) {
+	fmt.Println("LOCAL ORDERS:")
+	for i := 0; i < N_BUTTONTYPES; i++ {
+		for j := 0; j < N_FLOORS; j++ {
+			fmt.Printf("%b ", orders.localOrders[i][j])
+		}
+		fmt.Printf("\n")
+
+	}
+	fmt.Println("GLOBAL ORDERS:")
+	for i := 0; i < N_BUTTONTYPES-1; i++ {
+		for j := 0; j < N_FLOORS; j++ {
+			fmt.Printf("%b ", orders.globalOrders[i][j])
+		}
+		fmt.Printf("\n")
+
+	}
 }

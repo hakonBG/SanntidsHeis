@@ -56,10 +56,10 @@ func Elev_set_button_lamp(button Elev_button_type_t, floor int, value int) {
 	C.elev_set_button_lamp(C.elev_button_type_t(button), C.int(floor), C.int(value))
 }
 
-func elev_set_stop_lamp(value int) {
+func Elev_set_stop_lamp(value int) {
 	C.elev_set_stop_lamp(C.int(value))
 }
 
-func elev_set_door_open_lamo(value int) {
+func Elev_set_door_open_lamp(value int) {
 	C.elev_set_door_open_lamp(C.int(value))
 }

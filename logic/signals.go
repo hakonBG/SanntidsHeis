@@ -2,26 +2,14 @@ package logic
 
 import (
 	"./../driver"
+	"time"
 )
-
-type call_type_t int
-type order_type_t int
 
 const (
 	N_FLOORS = 4
 )
-const (
-	ADD_ORDER order_type_t = iota
-	REMOVE_ORDER
-)
 
-type Order_call_s struct {
-	orderType  order_type_t
-	buttonType driver.Elev_button_type_t
-	floor      int
-}
-
-func Pull_panel_signals(OrderChan chan Order_call_s, floorSensorChan chan int) {
+func Poll_panel_signals(OrderChan chan Order_call_s, floorSensorChan chan int) {
 	init_panel_lights()
 	for {
 
@@ -40,9 +28,10 @@ func Pull_panel_signals(OrderChan chan Order_call_s, floorSensorChan chan int) {
 			if (i < N_FLOORS-1) && (driver.Elev_get_button_signal(driver.BUTTON_CALL_UP, i) == 1) {
 				OrderChan <- order_call(i, driver.BUTTON_CALL_UP)
 			}
+
 		}
+		time.Sleep(25 * time.Millisecond)
 	}
-	<-floorSensorChan
 
 }
 
