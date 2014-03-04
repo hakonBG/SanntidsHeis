@@ -47,6 +47,7 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 					orderCall.buttonType = BUTTON_CALL_DOWN
 					orderChan <- orderCall
 				}
+				fmt.Println("Gotosleeeeep")
 				time.Sleep(2 * time.Second)
 				driver.Elev_set_door_open_lamp(0)
 
@@ -56,7 +57,7 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 				run_motor(direction)
 			}
 		case passOrders <- passOrdersChan:
-			fmt.Println("hei")
+			fmt.Println("MotorOrders")
 			orders = <-passOrdersChan
 
 		}

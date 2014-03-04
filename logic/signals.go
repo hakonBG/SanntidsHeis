@@ -9,13 +9,10 @@ const (
 	N_FLOORS = 4
 )
 
-func Poll_panel_signals(OrderChan chan Order_call_s, floorSensorChan chan int) {
+func Poll_panel_orders(OrderChan chan Order_call_s) {
 	init_panel_lights()
-	for {
 
-		if driver.Elev_get_floor_sensor_signal() > -1 {
-			floorSensorChan <- driver.Elev_get_floor_sensor_signal()
-		}
+	for {
 
 		for i := 0; i < N_FLOORS; i++ {
 			if driver.Elev_get_button_signal(driver.BUTTON_COMMAND, i) == 1 {
@@ -31,6 +28,19 @@ func Poll_panel_signals(OrderChan chan Order_call_s, floorSensorChan chan int) {
 
 		}
 		time.Sleep(25 * time.Millisecond)
+	}
+
+}
+
+func Poll_floor_sensor_signal(floorSensorChan chan int) {
+	for {
+		currentFloor := driver.Elev_get_floor_sensor_signal()
+
+		if currentFloor != -1 {
+			floorSensorChan <- currentFloor
+		}
+		time.Sleep(25 * time.Millisecond)
+
 	}
 
 }

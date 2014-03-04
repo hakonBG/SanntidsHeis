@@ -16,17 +16,22 @@ func Adjust_lights(passOrders chan chan Orders_s) {
 	var orders Orders_s
 	lightOrders := make(chan Orders_s)
 	for {
-		passOrders <- lightOrders
+		select {
+		case passOrders <- lightOrders:
+			fmt.Println("Light Orders")
+			orders = <-lightOrders
 
-		orders = <-lightOrders
-		fmt.Println("set lights")
-		set_lights(orders)
+			set_lights(orders)
+		case <-time.After(time.Second):
+			print_orders(orders)
+		}
+
 		time.Sleep(25 * time.Millisecond)
 	}
 
 }
 func set_lights(orders Orders_s) {
-	print_orders(orders)
+
 	for i := 0; i < N_FLOORS; i++ {
 		if i < N_FLOORS-1 {
 			driver.Elev_set_button_lamp(driver.BUTTON_CALL_UP, i, orders.localOrders[BUTTON_CALL_UP][i])
