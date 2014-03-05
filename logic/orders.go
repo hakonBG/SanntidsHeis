@@ -56,7 +56,7 @@ func Handle_orders(orderChan chan Order_call_s, passOrders chan chan Orders_s) {
 
 			}
 		case passOrdersChan = <-passOrders:
-			fmt.Println("Passing orders")
+
 			passOrdersChan <- orders
 		}
 

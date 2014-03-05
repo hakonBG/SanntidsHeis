@@ -38,6 +38,7 @@ func Poll_floor_sensor_signal(floorSensorChan chan int) {
 
 		if currentFloor != -1 {
 			floorSensorChan <- currentFloor
+			driver.Elev_set_floor_indicator(currentFloor)
 		}
 		time.Sleep(25 * time.Millisecond)
 

@@ -2,7 +2,7 @@ package logic
 
 import (
 	"./../driver"
-	"fmt"
+	//"fmt"
 	"time"
 )
 
@@ -18,13 +18,12 @@ func Adjust_lights(passOrders chan chan Orders_s) {
 	for {
 		select {
 		case passOrders <- lightOrders:
-			fmt.Println("Light Orders")
+			//fmt.Println("Light Orders")
 			orders = <-lightOrders
 
 			set_lights(orders)
 		}
 		time.Sleep(25 * time.Millisecond)
-		print_orders(orders)
 
 	}
 

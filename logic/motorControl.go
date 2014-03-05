@@ -26,6 +26,7 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 	var orderCall Order_call_s
 	orderCall.orderType = REMOVE_ORDER
 	var currentFloor, nextFloor int
+	var breakDirection direction_t
 	stopped := true
 	readyToGo := true
 	passOrdersChan := make(chan Orders_s)
@@ -34,12 +35,15 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 	for {
 		select {
 		case currentFloor = <-floorSensorChan:
-			fmt.Println("Received floorsensor")
+			//fmt.Println("Received floorsensor")
 			nextFloor, direction = findNextStop(currentFloor, direction, orders.localOrders)
-			fmt.Printf("Next Floor: %b \n", nextFloor)
-			fmt.Printf("CurrentFloor: %b \n", currentFloor)
+
+			//fmt.Printf("Next Floor: %b \n", nextFloor)
+			//fmt.Printf("CurrentFloor: %b \n", currentFloor)
 			if nextFloor == currentFloor {
-				stopped = stop_motor(direction, stopped)
+				fmt.Println("NEXTFLOOR == CURRENT")
+				fmt.Printf("Direction: %d\n", direction)
+				stopped = stop_motor(breakDirection, stopped)
 				timeCheckpoint = time.Now()
 				if direction == UP {
 					orderCall.floor = currentFloor
@@ -52,12 +56,14 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 				}
 
 			} else if nextFloor == -1 {
-				stopped = stop_motor(direction, stopped)
+				stopped = stop_motor(breakDirection, stopped)
 			} else if readyToGo {
 				stopped = run_motor(direction, stopped)
+				breakDirection = direction
 			}
 			if time.Now().After(timeCheckpoint.Add(DURATION_DOOR_OPEN * time.Second)) {
 				driver.Elev_set_door_open_lamp(0)
+				fmt.Printf("Direction: %d\n", direction)
 				readyToGo = true
 			} else {
 				readyToGo = false
@@ -66,7 +72,7 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 			}
 
 		case passOrders <- passOrdersChan:
-			fmt.Println("MotorOrders")
+			//fmt.Println("MotorOrders")
 			orders = <-passOrdersChan
 
 		}
@@ -84,11 +90,11 @@ func run_motor(direction direction_t, stopped bool) bool {
 	return false
 }
 
-func stop_motor(direction direction_t, stopped bool) bool {
+func stop_motor(breakDirection direction_t, stopped bool) bool {
 	if !stopped {
-		if direction == UP {
+		if breakDirection == UP {
 			driver.Elev_set_speed(-100)
-		} else if direction == DOWN {
+		} else if breakDirection == DOWN {
 			driver.Elev_set_speed(100)
 		}
 	}
@@ -145,7 +151,13 @@ func findNextStop(currentFloor int, direction direction_t, localOrders [N_BUTTON
 		}
 
 	}
-	return -1, direction
+	if currentFloor == BOTTOM_FLOOR {
+		return -1, UP
+	} else if currentFloor == TOP_FLOOR {
+		return -1, DOWN
+	} else {
+		return -1, direction
+	}
 
 }
 
