@@ -11,11 +11,13 @@ type direction_t int
 const (
 	UP direction_t = iota
 	DOWN
+	STAND_STILL
 )
 const (
-	BOTTOM_FLOOR = 0
-	TOP_FLOOR    = N_FLOORS - 1
-	MOTOR_SPEED  = 150
+	BOTTOM_FLOOR       = 0
+	TOP_FLOOR          = N_FLOORS - 1
+	MOTOR_SPEED        = 150
+	DURATION_DOOR_OPEN = 2
 )
 
 func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orderChan chan Order_call_s) {
@@ -24,8 +26,10 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 	var orderCall Order_call_s
 	orderCall.orderType = REMOVE_ORDER
 	var currentFloor, nextFloor int
+	stopped := true
+	readyToGo := true
 	passOrdersChan := make(chan Orders_s)
-	currentFloor = 1
+	timeCheckpoint := time.Now().Add(-3 * time.Second)
 
 	for {
 		select {
@@ -35,9 +39,8 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 			fmt.Printf("Next Floor: %b \n", nextFloor)
 			fmt.Printf("CurrentFloor: %b \n", currentFloor)
 			if nextFloor == currentFloor {
-				stop_motor()
-				driver.Elev_set_door_open_lamp(1)
-
+				stopped = stop_motor(direction, stopped)
+				timeCheckpoint = time.Now()
 				if direction == UP {
 					orderCall.floor = currentFloor
 					orderCall.buttonType = BUTTON_CALL_UP
@@ -47,15 +50,21 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 					orderCall.buttonType = BUTTON_CALL_DOWN
 					orderChan <- orderCall
 				}
-				fmt.Println("Gotosleeeeep")
-				time.Sleep(2 * time.Second)
-				driver.Elev_set_door_open_lamp(0)
 
 			} else if nextFloor == -1 {
-				stop_motor()
-			} else {
-				run_motor(direction)
+				stopped = stop_motor(direction, stopped)
+			} else if readyToGo {
+				stopped = run_motor(direction, stopped)
 			}
+			if time.Now().After(timeCheckpoint.Add(DURATION_DOOR_OPEN * time.Second)) {
+				driver.Elev_set_door_open_lamp(0)
+				readyToGo = true
+			} else {
+				readyToGo = false
+				driver.Elev_set_door_open_lamp(1)
+
+			}
+
 		case passOrders <- passOrdersChan:
 			fmt.Println("MotorOrders")
 			orders = <-passOrdersChan
@@ -65,17 +74,28 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 	}
 }
 
-func run_motor(direction direction_t) {
+func run_motor(direction direction_t, stopped bool) bool {
 	if direction == UP {
 		driver.Elev_set_speed(MOTOR_SPEED)
 	}
 	if direction == DOWN {
 		driver.Elev_set_speed(-MOTOR_SPEED)
 	}
+	return false
 }
 
-func stop_motor() {
+func stop_motor(direction direction_t, stopped bool) bool {
+	if !stopped {
+		if direction == UP {
+			driver.Elev_set_speed(-100)
+		} else if direction == DOWN {
+			driver.Elev_set_speed(100)
+		}
+	}
+
+	<-time.After(50 * time.Millisecond)
 	driver.Elev_set_speed(0)
+	return true
 }
 
 func findNextStop(currentFloor int, direction direction_t, localOrders [N_BUTTONTYPES][N_FLOORS]int) (int, direction_t) {

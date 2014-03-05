@@ -22,11 +22,10 @@ func Adjust_lights(passOrders chan chan Orders_s) {
 			orders = <-lightOrders
 
 			set_lights(orders)
-		case <-time.After(time.Second):
-			print_orders(orders)
 		}
-
 		time.Sleep(25 * time.Millisecond)
+		print_orders(orders)
+
 	}
 
 }
