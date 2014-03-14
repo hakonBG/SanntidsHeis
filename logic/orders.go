@@ -1,12 +1,12 @@
 package logic
 
 import (
-	"./../driver"
+	//"./../driver"
+	"./../ownVar"
 	"fmt"
 )
 
 type call_type_t int
-type order_type_t int
 
 const (
 	N_BUTTONTYPES       = 3
@@ -15,44 +15,31 @@ const (
 	LAMP_OFF            = 0
 )
 
-const (
-	GLOBAL order_type_t = iota
-	LOCAL
-)
-
-type Order_call_s struct {
-	orderType  order_type_t
-	buttonType driver.Elev_button_type_t
-	floor      int
-}
-
-type Orders_s struct {
-	globalOrders [N_GLOBALBUTTONTYPES][N_FLOORS]int
-	localOrders  [N_BUTTONTYPES][N_FLOORS]int
-}
-
-func Handle_orders(addOrderChan chan Order_call_s, removeOrderChan chan Order_call_s, passOrders chan chan Orders_s) {
-	var orderCall Order_call_s
-	var orders Orders_s
-	passOrdersChan := make(chan Orders_s)
-	orders.localOrders = Init_localOrders()
-	orders.globalOrders = Init_globalOrders()
+func Handle_orders(addOrderChan chan ownVar.Order_call_s, removeOrderChan chan ownVar.Order_call_s, passOrders chan chan ownVar.Orders_s) {
+	var orderCall ownVar.Order_call_s
+	var orders ownVar.Orders_s
+	passOrdersChan := make(chan ownVar.Orders_s)
+	orders.LocalOrders = Init_localOrders()
+	orders.GlobalOrders = Init_globalOrders()
 	for {
 		select {
 		case orderCall = <-removeOrderChan:
-			if orderCall.orderType == LOCAL {
-				orders.localOrders[orderCall.buttonType][orderCall.floor] = 0
-				orders.localOrders[BUTTON_COMMAND][orderCall.floor] = 0
+			if orderCall.OrderType == ownVar.LOCAL {
+				orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 0
+				orders.LocalOrders[orderCall.ButtonType][orderCall.Floor] = 0
+				orders.LocalOrders[BUTTON_COMMAND][orderCall.Floor] = 0
 				fmt.Println("Remove local Order")
-			} else if orderCall.orderType == GLOBAL {
-				orders.globalOrders[orderCall.buttonType][orderCall.floor] = 0
+			} else if orderCall.OrderType == ownVar.GLOBAL {
+				orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 0
+				fmt.Println("Remove global Order")
 			}
-		case orderCall = <-addOrderChan:
-			if orderCall.orderType == LOCAL {
-				orders.localOrders[orderCall.buttonType][orderCall.floor] = 1
 
-			} else if orderCall.orderType == GLOBAL {
-				orders.globalOrders[orderCall.buttonType][orderCall.floor] = 1
+		case orderCall = <-addOrderChan:
+			if orderCall.OrderType == ownVar.LOCAL {
+				orders.LocalOrders[orderCall.ButtonType][orderCall.Floor] = 1
+				fmt.Println("legger til local")
+			} else if orderCall.OrderType == ownVar.GLOBAL {
+				orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 1
 				fmt.Println("legger til Global!!")
 			}
 
@@ -87,11 +74,11 @@ func Init_globalOrders() [N_GLOBALBUTTONTYPES][N_FLOORS]int {
 
 }
 
-func print_orders(orders Orders_s) {
+func print_orders(orders ownVar.Orders_s) {
 	fmt.Println("LOCAL ORDERS:")
 	for i := 0; i < N_BUTTONTYPES; i++ {
 		for j := 0; j < N_FLOORS; j++ {
-			fmt.Printf("%b ", orders.localOrders[i][j])
+			fmt.Printf("%b ", orders.LocalOrders[i][j])
 		}
 		fmt.Printf("\n")
 
@@ -99,7 +86,7 @@ func print_orders(orders Orders_s) {
 	fmt.Println("GLOBAL ORDERS:")
 	for i := 0; i < N_BUTTONTYPES-1; i++ {
 		for j := 0; j < N_FLOORS; j++ {
-			fmt.Printf("%b ", orders.globalOrders[i][j])
+			fmt.Printf("%b ", orders.GlobalOrders[i][j])
 		}
 		fmt.Printf("\n")
 

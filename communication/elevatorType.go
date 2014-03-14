@@ -1,30 +1,10 @@
 package communication
 
 import (
-	"./../driver"
-	"./../logic"
-	"encoding/json"
-	"fmt"
-	"math"
+	"./../ownVar"
+	//"fmt"
+	//"math"
 	"time"
-)
-
-type Status_t int
-
-type Elevator_s struct {
-	Direction    logic.Direction_t
-	Moving       bool
-	Orders       [N_BUTTONTYPES][N_FLOORS]int
-	LastTime     time.Time
-	Ip           string
-	NextFloor    int
-	CurrentFloor int
-}
-
-const (
-	UP Direction_t = iota
-	DOWN
-	IDLE
 )
 
 const (
@@ -33,11 +13,11 @@ const (
 	BUTTON_COMMAND   = 2
 )
 
-func Handle_elevators(addElevatorChan chan Elevator_s, removeElevatorChan chan Elevator_S, passElevators chan chan map[string]Elevator_s) {
-	var elevators map[string]Elevator_s
-	var elevator, elevatorSelf, elevatorSelfTemp Elevator_s
-	elevatorSelf
-	findBestElevatorChan := make(chan Elevator_s)
+func Handle_elevators(addElevatorChan chan ownVar.Elevator_s, removeElevatorChan chan ownVar.Elevator_s, passElevators chan chan map[string]ownVar.Elevator_s) {
+	elevators := make(map[string]ownVar.Elevator_s)
+	var elevator ownVar.Elevator_s
+
+	findBestElevatorChan := make(chan map[string]ownVar.Elevator_s)
 	for {
 		select {
 		case findBestElevatorChan = <-passElevators:
@@ -53,11 +33,12 @@ func Handle_elevators(addElevatorChan chan Elevator_s, removeElevatorChan chan E
 
 }
 
-func initializeElevator(ip string) Elevator_s {
-	var elev Elevator_s
+func initializeElevator(ip string) ownVar.Elevator_s {
+	var elev ownVar.Elevator_s
 	elev.Ip = ip
-	elev.Status = IDLE
+	elev.Direction = ownVar.IDLE
 	elev.NextFloor = 1
-	elev.LastTime = 0
+	elev.LastTime = time.Now()
 	elev.CurrentFloor = -1
+	return elev
 }

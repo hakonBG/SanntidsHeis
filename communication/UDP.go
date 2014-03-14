@@ -3,17 +3,17 @@ package communication
 import (
 	. "fmt"
 	"net"
-	"runtime"
-	"time"
+	"strings"
+
 	//. "strings"
 	//. "os"
 )
 
 const (
-	CONN_HOST          = "129.241.187.255"
-	ELEVATOR_READ_PORT = "32373"
-	ELEVATOR_SEND_PORT = "32370"
-	CONN_TYPE          = "udp4"
+	CONN_HOST            = "129.241.187.255"
+	ELEVATOR_STRUCT_PORT = "32373"
+
+	CONN_TYPE = "udp4"
 )
 
 func check_error(err error) {
@@ -47,13 +47,13 @@ func Set_up_udp_sendSocket(port string) *net.UDPConn {
 
 }
 
-func Udp_receive_msg(udpReadSocket *net.UDPConn) (string, string) {
+func Udp_receive_msg(udpReadSocket *net.UDPConn) ([]byte, string) {
 
 	msg := make([]byte, 1024)
-	length, address, err := udpTempConn.ReadFromUDP(msg)
+	length, address, err := udpReadSocket.ReadFromUDP(msg)
 	check_error(err)
-	Println("melding mottatt:")
-	return string(msg[:length]), address.String()
+
+	return msg[:length], strings.Split(address.String(), ":")[0]
 
 }
 

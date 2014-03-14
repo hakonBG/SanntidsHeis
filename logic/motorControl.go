@@ -2,16 +2,11 @@ package logic
 
 import (
 	"./../driver"
+	"./../ownVar"
 	"fmt"
 	"time"
 )
 
-type Direction_t int
-
-const (
-	UP Direction_t = iota
-	DOWN
-)
 const (
 	BOTTOM_FLOOR       = 0
 	TOP_FLOOR          = N_FLOORS - 1
@@ -21,60 +16,50 @@ const (
 
 //Equal as the type in communication
 
-type Elevator_s struct {
-	Direction    Direction_t
-	Moving       bool
-	Orders       [N_BUTTONTYPES][N_FLOORS]int
-	LastTime     time.Time
-	Ip           string
-	NextFloor    int
-	CurrentFloor int
-}
-
-func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, removeOrderChan chan Order_call_s, selfElevatorChan chan Elevator_s) {
-	direction := DOWN
-	var elevator Elevator_s
-	var orders Orders_s
-	var orderCall Order_call_s
-	orderCall.orderType = LOCAL
+func Motor_control(passOrders chan chan ownVar.Orders_s, floorSensorChan chan int, removeOrderChan chan ownVar.Order_call_s, selfElevatorChan chan ownVar.Elevator_s) {
+	direction := ownVar.DOWN
+	var elevator ownVar.Elevator_s
+	var orders ownVar.Orders_s
+	var orderCall ownVar.Order_call_s
+	orderCall.OrderType = ownVar.LOCAL
 	var currentFloor, nextFloor int
-	var breakDirection Direction_t
+	var breakDirection ownVar.Direction_t
 	stopped := true
 	readyToGo := true
-	passOrdersChan := make(chan Orders_s)
+	passOrdersChan := make(chan ownVar.Orders_s)
 	timeCheckpoint := time.Now().Add(-3 * time.Second)
 
 	for {
 		select {
 		case currentFloor = <-floorSensorChan:
 
-			nextFloor, direction = findNextStop(currentFloor, direction, orders.localOrders)
+			nextFloor, direction = findNextStop(currentFloor, direction, orders.LocalOrders)
 
 			//Update Elevator variables
 			elevator.CurrentFloor = currentFloor
 			elevator.NextFloor = nextFloor
 			elevator.Direction = direction
-			elevator.Orders = orders.localOrders
 
 			if nextFloor == currentFloor {
 				fmt.Println("NEXTFLOOR == CURRENT")
-				fmt.Printf("Direction: %d\n", direction)
+				//fmt.Printf("Direction: %d\n", direction)
 				stopped = stop_motor(breakDirection, stopped)
 				elevator.Moving = false
 				timeCheckpoint = time.Now()
-				if direction == UP {
-					orderCall.floor = currentFloor
-					orderCall.buttonType = BUTTON_CALL_UP
+				if direction == ownVar.UP {
+					orderCall.Floor = currentFloor
+					orderCall.ButtonType = driver.BUTTON_CALL_UP
 					removeOrderChan <- orderCall
 				} else {
-					orderCall.floor = currentFloor
-					orderCall.buttonType = BUTTON_CALL_DOWN
+					orderCall.Floor = currentFloor
+					orderCall.ButtonType = driver.BUTTON_CALL_DOWN
 					removeOrderChan <- orderCall
 				}
 
 			} else if nextFloor == -1 {
 				stopped = stop_motor(breakDirection, stopped)
 				elevator.Moving = false
+				elevator.Direction = ownVar.IDLE
 			} else if readyToGo {
 				stopped = run_motor(direction, stopped)
 				elevator.Moving = true
@@ -83,7 +68,7 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, remo
 			}
 			if time.Now().After(timeCheckpoint.Add(DURATION_DOOR_OPEN * time.Second)) {
 				driver.Elev_set_door_open_lamp(0)
-				fmt.Printf("Direction: %d\n", direction)
+				//fmt.Printf("Direction: %d\n", direction)
 				readyToGo = true
 			} else {
 				readyToGo = false
@@ -94,6 +79,9 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, remo
 		case passOrders <- passOrdersChan:
 			//fmt.Println("MotorOrders")
 			orders = <-passOrdersChan
+			elevator.Orders[BUTTON_COMMAND] = orders.LocalOrders[BUTTON_COMMAND]
+			elevator.Orders[BUTTON_CALL_UP] = orders.GlobalOrders[BUTTON_CALL_UP]
+			elevator.Orders[BUTTON_CALL_DOWN] = orders.GlobalOrders[BUTTON_CALL_DOWN]
 
 		case selfElevatorChan <- elevator:
 
@@ -102,21 +90,21 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, remo
 	}
 }
 
-func run_motor(direction Direction_t, stopped bool) bool {
-	if direction == UP {
+func run_motor(direction ownVar.Direction_t, stopped bool) bool {
+	if direction == ownVar.UP {
 		driver.Elev_set_speed(MOTOR_SPEED)
 	}
-	if direction == DOWN {
+	if direction == ownVar.DOWN {
 		driver.Elev_set_speed(-MOTOR_SPEED)
 	}
 	return false
 }
 
-func stop_motor(breakDirection Direction_t, stopped bool) bool {
+func stop_motor(breakDirection ownVar.Direction_t, stopped bool) bool {
 	if !stopped {
-		if breakDirection == UP {
+		if breakDirection == ownVar.UP {
 			driver.Elev_set_speed(-100)
-		} else if breakDirection == DOWN {
+		} else if breakDirection == ownVar.DOWN {
 			driver.Elev_set_speed(100)
 		}
 	}
@@ -126,57 +114,57 @@ func stop_motor(breakDirection Direction_t, stopped bool) bool {
 	return true
 }
 
-func findNextStop(currentFloor int, direction Direction_t, localOrders [N_BUTTONTYPES][N_FLOORS]int) (int, Direction_t) {
-	if direction == UP {
+func findNextStop(currentFloor int, direction ownVar.Direction_t, localOrders [N_BUTTONTYPES][N_FLOORS]int) (int, ownVar.Direction_t) {
+	if direction == ownVar.UP {
 		for i := currentFloor; i < N_FLOORS; i++ {
-			if (localOrders[BUTTON_CALL_UP][i] == 1) || (localOrders[BUTTON_COMMAND][i] == 1) {
-				return i, UP
+			if (localOrders[driver.BUTTON_CALL_UP][i] == 1) || (localOrders[driver.BUTTON_COMMAND][i] == 1) {
+				return i, ownVar.UP
 			}
 		}
 		for i := N_FLOORS - 1; i >= 0; i-- {
-			if (localOrders[BUTTON_CALL_DOWN][i] == 1) || (localOrders[BUTTON_COMMAND][i] == 1) {
+			if (localOrders[driver.BUTTON_CALL_DOWN][i] == 1) || (localOrders[driver.BUTTON_COMMAND][i] == 1) {
 				if i > currentFloor {
-					return i, UP
+					return i, ownVar.UP
 				} else {
-					return i, DOWN
+					return i, ownVar.DOWN
 				}
 
 			}
 		}
 		for i := 0; i < currentFloor; i++ {
-			if localOrders[BUTTON_CALL_UP][i] == 1 {
-				return i, DOWN
+			if localOrders[driver.BUTTON_CALL_UP][i] == 1 {
+				return i, ownVar.DOWN
 			}
 		}
 
-	} else if direction == DOWN {
+	} else if direction == ownVar.DOWN {
 		for i := currentFloor; i >= 0; i-- {
-			if (localOrders[BUTTON_CALL_DOWN][i] == 1) || (localOrders[BUTTON_COMMAND][i] == 1) {
-				return i, DOWN
+			if (localOrders[driver.BUTTON_CALL_DOWN][i] == 1) || (localOrders[driver.BUTTON_COMMAND][i] == 1) {
+				return i, ownVar.DOWN
 			}
 
 		}
 		for i := 0; i < N_FLOORS; i++ {
-			if (localOrders[BUTTON_CALL_UP][i] == 1) || (localOrders[BUTTON_COMMAND][i] == 1) {
+			if (localOrders[driver.BUTTON_CALL_UP][i] == 1) || (localOrders[driver.BUTTON_COMMAND][i] == 1) {
 				if i < currentFloor {
-					return i, DOWN
+					return i, ownVar.DOWN
 				} else {
-					return i, UP
+					return i, ownVar.UP
 				}
 
 			}
 		}
 		for i := N_FLOORS - 1; i >= 0; i-- {
-			if localOrders[BUTTON_CALL_DOWN][i] == 1 {
-				return i, UP
+			if localOrders[driver.BUTTON_CALL_DOWN][i] == 1 {
+				return i, ownVar.UP
 			}
 		}
 
 	}
 	if currentFloor == BOTTOM_FLOOR {
-		return -1, UP
+		return -1, ownVar.UP
 	} else if currentFloor == TOP_FLOOR {
-		return -1, DOWN
+		return -1, ownVar.DOWN
 	} else {
 		return -1, direction
 	}
@@ -190,6 +178,8 @@ func Init_elevator() {
 			break
 		}
 	}
+	driver.Elev_set_speed(150)
+	<-time.After(25 * time.Millisecond)
 	driver.Elev_set_speed(0)
 
 }

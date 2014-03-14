@@ -1,18 +1,22 @@
 package communication
 
 import (
+	"./../ownVar"
 	"fmt"
 	"time"
 )
 
-func Receive_elevator(addElevatorChan chan Elevator_s) {
-	elevatorReadSocket := Set_up_udp_readSocket(ELEVATOR_READ_PORT)
-	var stringElev string
-	var elevator Elevator_s
+func Receive_elevator(addElevatorChan chan ownVar.Elevator_s) {
+	elevatorReadSocket := Set_up_udp_readSocket(ELEVATOR_STRUCT_PORT)
 
+	var elevator ownVar.Elevator_s
+	var msgElev []byte
+	var connAddress string
 	for {
-		stringElev, connAddress = Udp_receive_msg(elevatorReadSocket)
-		elevator = Json_decode_elevator(stringElev)
+
+		msgElev, connAddress = Udp_receive_msg(elevatorReadSocket)
+
+		elevator = Json_decode_elevator(msgElev)
 		elevator.Ip = connAddress
 		elevator.LastTime = time.Now()
 		addElevatorChan <- elevator
@@ -20,15 +24,16 @@ func Receive_elevator(addElevatorChan chan Elevator_s) {
 	}
 }
 
-func Push_elevator(selfElevatorChan chan Elevator_s) {
-	elevatorSendSocket := Set_up_udp_sendSocket(ELEVATOR_SEND_PORT)
-	var elevator Elevator_s
+func Push_elevator(selfElevatorChan chan ownVar.Elevator_s) {
+	elevatorSendSocket := Set_up_udp_sendSocket(ELEVATOR_STRUCT_PORT)
+	var elevator ownVar.Elevator_s
 	var sendMsg []byte
+
 	for {
+		fmt.Println("Pusher heis")
+		elevator = <-selfElevatorChan
 
-		elevator <- selfElevatorChan
-
-		sendMsg := Json_encode_elevator(elevator)
+		sendMsg = Json_encode_elevator(elevator)
 		Udp_send_msg(elevatorSendSocket, sendMsg)
 
 	}

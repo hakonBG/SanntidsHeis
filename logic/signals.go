@@ -2,7 +2,7 @@ package logic
 
 import (
 	"./../driver"
-
+	"./../ownVar"
 	"time"
 )
 
@@ -16,12 +16,12 @@ const (
 	BUTTON_COMMAND   = 2
 )
 
-func Poll_panel_orders(addOrderChan chan Order_call_s, passOrders chan chan Orders_s) {
+func Poll_panel_orders(addOrderChan chan ownVar.Order_call_s, passOrders chan chan ownVar.Orders_s) {
 	init_panel_lights()
-	panelOrderChan := make(chan Orders_s)
-	var orders Orders_s
-	orders.localOrders = Init_localOrders()
-	orders.globalOrders = Init_globalOrders()
+	panelOrderChan := make(chan ownVar.Orders_s)
+	var orders ownVar.Orders_s
+	orders.LocalOrders = Init_localOrders()
+	orders.GlobalOrders = Init_globalOrders()
 	for {
 		select {
 
@@ -30,19 +30,19 @@ func Poll_panel_orders(addOrderChan chan Order_call_s, passOrders chan chan Orde
 			orders = <-panelOrderChan
 
 			for i := 0; i < N_FLOORS; i++ {
-				if (driver.Elev_get_button_signal(driver.BUTTON_COMMAND, i) == 1) && (orders.localOrders[BUTTON_COMMAND][i] == 0) {
+				if (driver.Elev_get_button_signal(driver.BUTTON_COMMAND, i) == 1) && (orders.LocalOrders[BUTTON_COMMAND][i] == 0) {
 
 					addOrderChan <- order_call(i, driver.BUTTON_COMMAND)
-					orders.localOrders[BUTTON_COMMAND][i] = 1
+					orders.LocalOrders[BUTTON_COMMAND][i] = 1
 				}
 
-				if (i > 0) && (driver.Elev_get_button_signal(driver.BUTTON_CALL_DOWN, i) == 1) && (orders.globalOrders[BUTTON_CALL_DOWN][i] == 0) {
+				if (i > 0) && (driver.Elev_get_button_signal(driver.BUTTON_CALL_DOWN, i) == 1) && (orders.GlobalOrders[BUTTON_CALL_DOWN][i] == 0) {
 					addOrderChan <- order_call(i, driver.BUTTON_CALL_DOWN)
-					orders.globalOrders[BUTTON_CALL_DOWN][i] = 1
+					orders.GlobalOrders[BUTTON_CALL_DOWN][i] = 1
 				}
-				if (i < N_FLOORS-1) && (driver.Elev_get_button_signal(driver.BUTTON_CALL_UP, i) == 1) && (orders.globalOrders[BUTTON_CALL_UP][i] == 0) {
+				if (i < N_FLOORS-1) && (driver.Elev_get_button_signal(driver.BUTTON_CALL_UP, i) == 1) && (orders.GlobalOrders[BUTTON_CALL_UP][i] == 0) {
 					addOrderChan <- order_call(i, driver.BUTTON_CALL_UP)
-					orders.globalOrders[BUTTON_CALL_UP][i] = 1
+					orders.GlobalOrders[BUTTON_CALL_UP][i] = 1
 				}
 
 			}
@@ -68,15 +68,15 @@ func Poll_floor_sensor_signal(floorSensorChan chan int) {
 
 }
 
-func order_call(floor int, buttonType driver.Elev_button_type_t) Order_call_s {
+func order_call(floor int, buttonType driver.Elev_button_type_t) ownVar.Order_call_s {
 
-	var orderCall Order_call_s
-	orderCall.buttonType = buttonType
-	orderCall.floor = floor
+	var orderCall ownVar.Order_call_s
+	orderCall.ButtonType = buttonType
+	orderCall.Floor = floor
 	if (buttonType == driver.BUTTON_CALL_UP) || (buttonType == BUTTON_CALL_DOWN) {
-		orderCall.orderType = GLOBAL
+		orderCall.OrderType = ownVar.GLOBAL
 	} else if buttonType == driver.BUTTON_COMMAND {
-		orderCall.orderType = LOCAL
+		orderCall.OrderType = ownVar.LOCAL
 	}
 
 	return orderCall
