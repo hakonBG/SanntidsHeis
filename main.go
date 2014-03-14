@@ -11,16 +11,17 @@ import (
 
 func main() {
 	GOMAXPROCS(NumCPU())
-	orderChan := make(chan logic.Order_call_s)
+	addOrderChan, removeOrderChan := make(chan logic.Order_call_s), make(chan logic.Order_call_s)
 	floorSensorchan := make(chan int)
+	selfElevatorChan := make(chan logic.Elevator_s)
 	passOrders := make(chan chan logic.Orders_s)
 	exit := make(chan int)
 	driver.Elev_init()
 	logic.Init_elevator()
-	go logic.Poll_panel_orders(orderChan)
+	go logic.Poll_panel_orders(addOrderChan, passOrders)
 	go logic.Poll_floor_sensor_signal(floorSensorchan)
-	go logic.Handle_orders(orderChan, passOrders)
-	go logic.Motor_control(passOrders, floorSensorchan, orderChan)
+	go logic.Handle_orders(addOrderChan, removeOrderChan, passOrders)
+	go logic.Motor_control(passOrders, floorSensorchan, removeOrderChan, selfElevatorChan)
 	go logic.Adjust_lights(passOrders)
 	<-exit
 }

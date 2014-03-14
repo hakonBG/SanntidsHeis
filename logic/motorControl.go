@@ -6,12 +6,11 @@ import (
 	"time"
 )
 
-type direction_t int
+type Direction_t int
 
 const (
-	UP direction_t = iota
+	UP Direction_t = iota
 	DOWN
-	STAND_STILL
 )
 const (
 	BOTTOM_FLOOR       = 0
@@ -20,13 +19,26 @@ const (
 	DURATION_DOOR_OPEN = 2
 )
 
-func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orderChan chan Order_call_s) {
+//Equal as the type in communication
+
+type Elevator_s struct {
+	Direction    Direction_t
+	Moving       bool
+	Orders       [N_BUTTONTYPES][N_FLOORS]int
+	LastTime     time.Time
+	Ip           string
+	NextFloor    int
+	CurrentFloor int
+}
+
+func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, removeOrderChan chan Order_call_s, selfElevatorChan chan Elevator_s) {
 	direction := DOWN
+	var elevator Elevator_s
 	var orders Orders_s
 	var orderCall Order_call_s
-	orderCall.orderType = REMOVE_ORDER
+	orderCall.orderType = LOCAL
 	var currentFloor, nextFloor int
-	var breakDirection direction_t
+	var breakDirection Direction_t
 	stopped := true
 	readyToGo := true
 	passOrdersChan := make(chan Orders_s)
@@ -35,31 +47,39 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 	for {
 		select {
 		case currentFloor = <-floorSensorChan:
-			//fmt.Println("Received floorsensor")
+
 			nextFloor, direction = findNextStop(currentFloor, direction, orders.localOrders)
 
-			//fmt.Printf("Next Floor: %b \n", nextFloor)
-			//fmt.Printf("CurrentFloor: %b \n", currentFloor)
+			//Update Elevator variables
+			elevator.CurrentFloor = currentFloor
+			elevator.NextFloor = nextFloor
+			elevator.Direction = direction
+			elevator.Orders = orders.localOrders
+
 			if nextFloor == currentFloor {
 				fmt.Println("NEXTFLOOR == CURRENT")
 				fmt.Printf("Direction: %d\n", direction)
 				stopped = stop_motor(breakDirection, stopped)
+				elevator.Moving = false
 				timeCheckpoint = time.Now()
 				if direction == UP {
 					orderCall.floor = currentFloor
 					orderCall.buttonType = BUTTON_CALL_UP
-					orderChan <- orderCall
+					removeOrderChan <- orderCall
 				} else {
 					orderCall.floor = currentFloor
 					orderCall.buttonType = BUTTON_CALL_DOWN
-					orderChan <- orderCall
+					removeOrderChan <- orderCall
 				}
 
 			} else if nextFloor == -1 {
 				stopped = stop_motor(breakDirection, stopped)
+				elevator.Moving = false
 			} else if readyToGo {
 				stopped = run_motor(direction, stopped)
+				elevator.Moving = true
 				breakDirection = direction
+
 			}
 			if time.Now().After(timeCheckpoint.Add(DURATION_DOOR_OPEN * time.Second)) {
 				driver.Elev_set_door_open_lamp(0)
@@ -75,12 +95,14 @@ func Motor_control(passOrders chan chan Orders_s, floorSensorChan chan int, orde
 			//fmt.Println("MotorOrders")
 			orders = <-passOrdersChan
 
+		case selfElevatorChan <- elevator:
+
 		}
 		time.Sleep(25 * time.Millisecond)
 	}
 }
 
-func run_motor(direction direction_t, stopped bool) bool {
+func run_motor(direction Direction_t, stopped bool) bool {
 	if direction == UP {
 		driver.Elev_set_speed(MOTOR_SPEED)
 	}
@@ -90,7 +112,7 @@ func run_motor(direction direction_t, stopped bool) bool {
 	return false
 }
 
-func stop_motor(breakDirection direction_t, stopped bool) bool {
+func stop_motor(breakDirection Direction_t, stopped bool) bool {
 	if !stopped {
 		if breakDirection == UP {
 			driver.Elev_set_speed(-100)
@@ -104,7 +126,7 @@ func stop_motor(breakDirection direction_t, stopped bool) bool {
 	return true
 }
 
-func findNextStop(currentFloor int, direction direction_t, localOrders [N_BUTTONTYPES][N_FLOORS]int) (int, direction_t) {
+func findNextStop(currentFloor int, direction Direction_t, localOrders [N_BUTTONTYPES][N_FLOORS]int) (int, Direction_t) {
 	if direction == UP {
 		for i := currentFloor; i < N_FLOORS; i++ {
 			if (localOrders[BUTTON_CALL_UP][i] == 1) || (localOrders[BUTTON_COMMAND][i] == 1) {

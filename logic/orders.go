@@ -16,8 +16,8 @@ const (
 )
 
 const (
-	ADD_ORDER order_type_t = iota
-	REMOVE_ORDER
+	GLOBAL order_type_t = iota
+	LOCAL
 )
 
 type Order_call_s struct {
@@ -31,30 +31,31 @@ type Orders_s struct {
 	localOrders  [N_BUTTONTYPES][N_FLOORS]int
 }
 
-func Handle_orders(orderChan chan Order_call_s, passOrders chan chan Orders_s) {
+func Handle_orders(addOrderChan chan Order_call_s, removeOrderChan chan Order_call_s, passOrders chan chan Orders_s) {
 	var orderCall Order_call_s
 	var orders Orders_s
 	passOrdersChan := make(chan Orders_s)
-	orders.localOrders = init_localOrders()
-	orders.globalOrders = init_globalOrders()
+	orders.localOrders = Init_localOrders()
+	orders.globalOrders = Init_globalOrders()
 	for {
 		select {
-		case orderCall = <-orderChan:
-			if orderCall.orderType == REMOVE_ORDER {
+		case orderCall = <-removeOrderChan:
+			if orderCall.orderType == LOCAL {
 				orders.localOrders[orderCall.buttonType][orderCall.floor] = 0
 				orders.localOrders[BUTTON_COMMAND][orderCall.floor] = 0
-				fmt.Println("Remove Order")
-			} else if orderCall.orderType == ADD_ORDER {
-
-				if orderCall.buttonType == driver.BUTTON_CALL_UP || orderCall.buttonType == driver.BUTTON_CALL_DOWN {
-					orders.localOrders[orderCall.buttonType][orderCall.floor] = 1
-					fmt.Println("Legger til GLOBAL")
-				} else {
-					orders.localOrders[orderCall.buttonType][orderCall.floor] = 1
-					fmt.Println("legger til command!!")
-				}
-
+				fmt.Println("Remove local Order")
+			} else if orderCall.orderType == GLOBAL {
+				orders.globalOrders[orderCall.buttonType][orderCall.floor] = 0
 			}
+		case orderCall = <-addOrderChan:
+			if orderCall.orderType == LOCAL {
+				orders.localOrders[orderCall.buttonType][orderCall.floor] = 1
+
+			} else if orderCall.orderType == GLOBAL {
+				orders.globalOrders[orderCall.buttonType][orderCall.floor] = 1
+				fmt.Println("legger til Global!!")
+			}
+
 		case passOrdersChan = <-passOrders:
 
 			passOrdersChan <- orders
@@ -64,7 +65,7 @@ func Handle_orders(orderChan chan Order_call_s, passOrders chan chan Orders_s) {
 
 }
 
-func init_localOrders() [N_BUTTONTYPES][N_FLOORS]int {
+func Init_localOrders() [N_BUTTONTYPES][N_FLOORS]int {
 	var localOrders [N_BUTTONTYPES][N_FLOORS]int
 	for i := 0; i < N_BUTTONTYPES; i++ {
 		for j := 0; j < N_FLOORS; j++ {
@@ -74,7 +75,7 @@ func init_localOrders() [N_BUTTONTYPES][N_FLOORS]int {
 	}
 	return localOrders
 }
-func init_globalOrders() [N_GLOBALBUTTONTYPES][N_FLOORS]int {
+func Init_globalOrders() [N_GLOBALBUTTONTYPES][N_FLOORS]int {
 	var globalOrders [N_GLOBALBUTTONTYPES][N_FLOORS]int
 	for i := 0; i < N_GLOBALBUTTONTYPES; i++ {
 		for j := 0; j < N_FLOORS; j++ {
