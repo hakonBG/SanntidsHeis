@@ -3,9 +3,8 @@ package communication
 import (
 	"./../driver"
 	"./../ownVar"
-	//"fmt"
-	"net"
-	"strings"
+	"fmt"
+	"math"
 )
 
 const (
@@ -32,13 +31,14 @@ func Find_best_elevator(
 
 	orderCall.OrderType = ownVar.GLOBAL
 
-	ownIp := get_own_ip()
+	ownIp := Get_own_ip()
 	for {
 		select {
 		case passElevators <- elevatorChan:
 			elevators = <-elevatorChan
 		case passOrders <- orderChan:
 			orders = <-orderChan
+		case assignedOrdersChan <- assignedOrders:
 
 		default:
 
@@ -57,11 +57,15 @@ func Find_best_elevator(
 						orderCall.OrderType = ownVar.GLOBAL
 						bestElevator = find_min_elev(elevators, orderCall)
 						assignedOrders[i][j] = bestElevator.Ip
+
 						if (bestElevator.Ip == ownIp) && (orders.LocalOrders[i][j] == 0) {
+							orders.LocalOrders[i][j] = 1
+							fmt.Println("Find best Elev")
 							orderCall.OrderType = ownVar.LOCAL
 							addOrderChan <- orderCall
 						} else if (bestElevator.Ip != ownIp) && (orders.LocalOrders[i][j] == 1) {
-							orderCall.OrderType = ownVar.LOCAL
+							orders.LocalOrders[i][j] = 0
+							orderCall.OrderType = ownVar.STRICT_LOCAL
 							removeOrderChan <- orderCall
 
 						}
@@ -72,7 +76,8 @@ func Find_best_elevator(
 				}
 
 			}
-			assignedOrdersChan <- assignedOrders
+			//assignedOrdersChan <- assignedOrders
+			//fmt.Println(assignedOrders)
 
 		}
 
@@ -80,19 +85,16 @@ func Find_best_elevator(
 
 }
 
-func get_own_ip() string {
-	googleAddress, _ := net.ResolveTCPAddr("tcp", "www.google.com:80")
-	googleConn, _ := net.DialTCP("tcp", nil, googleAddress)
-	Ip := strings.Split(googleConn.LocalAddr().String(), ":")[0]
-	googleConn.Close()
-	return Ip
+func elev_cost(
+	elev ownVar.Elevator_s,
+	order ownVar.Order_call_s) int {
 
-}
-
-func elev_cost(elev ownVar.Elevator_s, order ownVar.Order_call_s) int {
+	//Start of function
 	value := 0
 	if order.ButtonType == driver.BUTTON_CALL_UP {
-		if elev.Direction == ownVar.UP {
+		if elev.NextFloor == order.Floor {
+			return int(math.Abs(float64(elev.CurrentFloor - order.Floor)))
+		} else if elev.Direction == ownVar.UP {
 			if !elev.Moving && elev.CurrentFloor == order.Floor {
 				return 0
 
@@ -104,18 +106,22 @@ func elev_cost(elev ownVar.Elevator_s, order ownVar.Order_call_s) int {
 
 					}
 				}
-			} else {
-				value = (N_FLOORS-1)*2 - (elev.CurrentFloor - order.Floor)
-				for i := 0; i < N_FLOORS; i++ {
-					if elev.Orders[BUTTON_COMMAND][i] == 1 {
-						value++
-					}
+			}
+		} else if elev.Direction == ownVar.IDLE {
+			return int(math.Abs(float64(elev.CurrentFloor - order.Floor)))
+		} else {
+			value = (N_FLOORS-1)*2 - (elev.CurrentFloor - order.Floor)
+			for i := 0; i < N_FLOORS; i++ {
+				if elev.Orders[BUTTON_COMMAND][i] == 1 {
+					value++
 				}
 			}
-
 		}
+
 	} else if order.ButtonType == driver.BUTTON_CALL_DOWN {
-		if elev.Direction == ownVar.DOWN {
+		if elev.NextFloor == order.Floor {
+			return int(math.Abs(float64(elev.CurrentFloor - order.Floor)))
+		} else if elev.Direction == ownVar.DOWN {
 			if !elev.Moving && elev.CurrentFloor == order.Floor {
 				return 0
 			} else if elev.CurrentFloor > order.Floor {
@@ -126,12 +132,14 @@ func elev_cost(elev ownVar.Elevator_s, order ownVar.Order_call_s) int {
 					}
 
 				}
-			} else {
-				value = (N_FLOORS-1)*2 - (order.Floor - elev.CurrentFloor)
-				for i := 0; i < N_FLOORS; i++ {
-					if elev.Orders[BUTTON_COMMAND][i] == 1 {
-						value++
-					}
+			}
+		} else if elev.Direction == ownVar.IDLE {
+			return int(math.Abs(float64(elev.CurrentFloor - order.Floor)))
+		} else {
+			value = (N_FLOORS-1)*2 - (order.Floor - elev.CurrentFloor)
+			for i := 0; i < N_FLOORS; i++ {
+				if elev.Orders[BUTTON_COMMAND][i] == 1 {
+					value++
 				}
 			}
 		}
@@ -156,6 +164,9 @@ func find_min_elev(elevators map[string]ownVar.Elevator_s, order ownVar.Order_ca
 				minElev = elev
 			}
 		}
+		//fmt.Println(elev.Ip, elevCost)
 	}
+	//fmt.Println("--------")
+
 	return minElev
 }

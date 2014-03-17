@@ -16,7 +16,17 @@ const (
 
 //Equal as the type in communication
 
-func Motor_control(passOrders chan chan ownVar.Orders_s, floorSensorChan chan int, removeOrderChan chan ownVar.Order_call_s, selfElevatorChan chan ownVar.Elevator_s) {
+func Motor_control(
+	passOrders chan chan ownVar.Orders_s,
+	floorSensorChan chan int,
+	removeOrderChan chan ownVar.Order_call_s,
+	selfElevatorChan chan ownVar.Elevator_s) {
+	//Start of function
+
+	//Channels
+	passOrdersChan := make(chan ownVar.Orders_s)
+
+	//Variables
 	direction := ownVar.DOWN
 	var elevator ownVar.Elevator_s
 	var orders ownVar.Orders_s
@@ -26,7 +36,6 @@ func Motor_control(passOrders chan chan ownVar.Orders_s, floorSensorChan chan in
 	var breakDirection ownVar.Direction_t
 	stopped := true
 	readyToGo := true
-	passOrdersChan := make(chan ownVar.Orders_s)
 	timeCheckpoint := time.Now().Add(-3 * time.Second)
 
 	for {
@@ -46,11 +55,16 @@ func Motor_control(passOrders chan chan ownVar.Orders_s, floorSensorChan chan in
 				stopped = stop_motor(breakDirection, stopped)
 				elevator.Moving = false
 				timeCheckpoint = time.Now()
+
 				if direction == ownVar.UP {
+					orders.LocalOrders[BUTTON_CALL_UP][currentFloor] = 0
+					orders.LocalOrders[BUTTON_COMMAND][currentFloor] = 0
 					orderCall.Floor = currentFloor
 					orderCall.ButtonType = driver.BUTTON_CALL_UP
 					removeOrderChan <- orderCall
-				} else {
+				} else if direction == ownVar.DOWN {
+					orders.LocalOrders[BUTTON_CALL_DOWN][currentFloor] = 0
+					orders.LocalOrders[BUTTON_COMMAND][currentFloor] = 0
 					orderCall.Floor = currentFloor
 					orderCall.ButtonType = driver.BUTTON_CALL_DOWN
 					removeOrderChan <- orderCall
@@ -86,7 +100,7 @@ func Motor_control(passOrders chan chan ownVar.Orders_s, floorSensorChan chan in
 		case selfElevatorChan <- elevator:
 
 		}
-		time.Sleep(25 * time.Millisecond)
+
 	}
 }
 
@@ -114,7 +128,12 @@ func stop_motor(breakDirection ownVar.Direction_t, stopped bool) bool {
 	return true
 }
 
-func findNextStop(currentFloor int, direction ownVar.Direction_t, localOrders [N_BUTTONTYPES][N_FLOORS]int) (int, ownVar.Direction_t) {
+func findNextStop(
+	currentFloor int,
+	direction ownVar.Direction_t,
+	localOrders [N_BUTTONTYPES][N_FLOORS]int) (int, ownVar.Direction_t) {
+
+	//Start of function
 	if direction == ownVar.UP {
 		for i := currentFloor; i < N_FLOORS; i++ {
 			if (localOrders[driver.BUTTON_CALL_UP][i] == 1) || (localOrders[driver.BUTTON_COMMAND][i] == 1) {
@@ -172,14 +191,19 @@ func findNextStop(currentFloor int, direction ownVar.Direction_t, localOrders [N
 }
 
 func Init_elevator() {
-	for {
-		driver.Elev_set_speed(-150)
-		if driver.Elev_get_floor_sensor_signal() != -1 {
-			break
+
+	position := driver.Elev_get_floor_sensor_signal()
+
+	if position == -1 {
+		for {
+			driver.Elev_set_speed(-150)
+			if driver.Elev_get_floor_sensor_signal() != -1 {
+				break
+			}
 		}
+		driver.Elev_set_speed(150)
+		<-time.After(25 * time.Millisecond)
+		driver.Elev_set_speed(0)
 	}
-	driver.Elev_set_speed(150)
-	<-time.After(25 * time.Millisecond)
-	driver.Elev_set_speed(0)
 
 }

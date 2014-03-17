@@ -13,11 +13,20 @@ const (
 	BUTTON_COMMAND   = 2
 )
 
-func Handle_elevators(addElevatorChan chan ownVar.Elevator_s, removeElevatorChan chan ownVar.Elevator_s, passElevators chan chan map[string]ownVar.Elevator_s) {
+func Handle_elevators(
+	addElevatorChan chan ownVar.Elevator_s,
+	removeElevatorChan chan ownVar.Elevator_s,
+	passElevators chan chan map[string]ownVar.Elevator_s) {
+	//Start of function
+
+	//Channels
+	findBestElevatorChan := make(chan map[string]ownVar.Elevator_s)
 	elevators := make(map[string]ownVar.Elevator_s)
+
+	//Variables
 	var elevator ownVar.Elevator_s
 
-	findBestElevatorChan := make(chan map[string]ownVar.Elevator_s)
+	//Do
 	for {
 		select {
 		case findBestElevatorChan = <-passElevators:

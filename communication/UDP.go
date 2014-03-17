@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	CONN_HOST            = "129.241.187.255"
-	ELEVATOR_STRUCT_PORT = "32373"
+	CONN_HOST                = "129.241.187.255"
+	ELEVATOR_STRUCT_PORT     = "32373"
+	ADD_GLOBAL_ORDER_PORT    = "42718"
+	REMOVE_GLOBAL_ORDER_PORT = "42714"
 
 	CONN_TYPE = "udp4"
 )
@@ -61,5 +63,14 @@ func Udp_send_msg(udpBroadcastSocket *net.UDPConn, msg []byte) {
 
 	_, err := udpBroadcastSocket.Write(msg)
 	check_error(err)
+
+}
+
+func Get_own_ip() string {
+	googleAddress, _ := net.ResolveTCPAddr("tcp", "www.google.com:80")
+	googleConn, _ := net.DialTCP("tcp", nil, googleAddress)
+	Ip := strings.Split(googleConn.LocalAddr().String(), ":")[0]
+	googleConn.Close()
+	return Ip
 
 }

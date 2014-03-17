@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+const (
+	N_SPAM = 5
+)
+
 func Receive_elevator(addElevatorChan chan ownVar.Elevator_s) {
 	elevatorReadSocket := Set_up_udp_readSocket(ELEVATOR_STRUCT_PORT)
 
@@ -30,7 +34,7 @@ func Push_elevator(selfElevatorChan chan ownVar.Elevator_s) {
 	var sendMsg []byte
 
 	for {
-		fmt.Println("Pusher heis")
+
 		elevator = <-selfElevatorChan
 
 		sendMsg = Json_encode_elevator(elevator)
@@ -38,4 +42,111 @@ func Push_elevator(selfElevatorChan chan ownVar.Elevator_s) {
 
 	}
 
+}
+
+func Receive_add_global_order(
+	addOrderChan chan ownVar.Order_call_s,
+	passOrders chan chan ownVar.Orders_s) {
+	//Function Start
+
+	//Channels
+	passOrdersChan := make(chan ownVar.Orders_s)
+
+	//Variables
+
+	ownIp := Get_own_ip()
+	globalOrderReadAddSocket := Set_up_udp_readSocket(ADD_GLOBAL_ORDER_PORT)
+	var orderCall ownVar.Order_call_s
+	var msgOrder []byte
+	var address string
+	var orders ownVar.Orders_s
+
+	//Do
+	for {
+		select {
+		case passOrders <- passOrdersChan:
+			orders = <-passOrdersChan
+		default:
+			msgOrder, address = Udp_receive_msg(globalOrderReadAddSocket)
+			if address != ownIp {
+				orderCall = Json_decode_order(msgOrder)
+				if orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] == 0 {
+					orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 1
+					addOrderChan <- orderCall
+				}
+
+			}
+		}
+
+	}
+
+}
+func Receive_remove_global_order(
+	removeOrderChan chan ownVar.Order_call_s,
+	passOrders chan chan ownVar.Orders_s) {
+
+	//Start of function
+
+	//Channels
+	passOrdersChan := make(chan ownVar.Orders_s)
+
+	//Variables
+	ownIp := Get_own_ip()
+	globalOrderReadRemoveSocket := Set_up_udp_readSocket(REMOVE_GLOBAL_ORDER_PORT)
+
+	var orderCall ownVar.Order_call_s
+	var msgOrder []byte
+	var address string
+	var orders ownVar.Orders_s
+	for {
+		select {
+		case passOrders <- passOrdersChan:
+			orders = <-passOrdersChan
+		default:
+			msgOrder, address = Udp_receive_msg(globalOrderReadRemoveSocket)
+			fmt.Println("WOOHOHOHOHOHOHOH")
+			if address != ownIp {
+
+				orderCall = Json_decode_order(msgOrder)
+				if orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] == 1 {
+					orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 0
+					removeOrderChan <- orderCall
+				}
+			}
+		}
+
+	}
+
+}
+
+func Push_add_global_order(pushAddGlobalOrderChan chan ownVar.Order_call_s) {
+
+	globalOrderSendAddSocket := Set_up_udp_sendSocket(ADD_GLOBAL_ORDER_PORT)
+	var orderCall ownVar.Order_call_s
+	var sendMsg []byte
+	for {
+		orderCall = <-pushAddGlobalOrderChan
+		sendMsg = Json_encode_order(orderCall)
+		fmt.Println("push add")
+		for i := 0; i < N_SPAM; i++ {
+			Udp_send_msg(globalOrderSendAddSocket, sendMsg)
+		}
+	}
+
+}
+
+func Push_remove_global_order(pushRemoveGlobalOrderChan chan ownVar.Order_call_s) {
+	globalOrderSendRemoveSocket := Set_up_udp_sendSocket(REMOVE_GLOBAL_ORDER_PORT)
+	var orderCall ownVar.Order_call_s
+	var sendMsg []byte
+	for {
+
+		orderCall = <-pushRemoveGlobalOrderChan
+		orderCall.OrderType = ownVar.GLOBAL
+		fmt.Println("push remove")
+		sendMsg = Json_encode_order(orderCall)
+		for i := 0; i < N_SPAM; i++ {
+			Udp_send_msg(globalOrderSendRemoveSocket, sendMsg)
+		}
+	}
 }

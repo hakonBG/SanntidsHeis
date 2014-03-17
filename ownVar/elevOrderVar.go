@@ -17,6 +17,7 @@ type Order_type_t int
 const (
 	GLOBAL Order_type_t = iota
 	LOCAL
+	STRICT_LOCAL
 )
 
 type Order_call_s struct {
