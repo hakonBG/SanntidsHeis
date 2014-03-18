@@ -16,22 +16,25 @@ const (
 func Find_best_elevator(
 	passOrders chan chan ownVar.Orders_s,
 	passElevators chan chan map[string]ownVar.Elevator_s,
-	addOrderChan chan ownVar.Order_call_s,
-	removeOrderChan chan ownVar.Order_call_s,
+	addOrderCostChan chan ownVar.Order_call_s,
+	removeOrderCostChan chan ownVar.Order_call_s,
 	assignedOrdersChan chan [N_GLOBALBUTTONTYPES][N_FLOORS]string) {
 	//Start of function
 
-	var assignedOrders [N_GLOBALBUTTONTYPES][N_FLOORS]string
-	var orders ownVar.Orders_s
-	var bestElevator ownVar.Elevator_s
+	//Channels
 	orderChan := make(chan ownVar.Orders_s)
 	elevatorChan := make(chan map[string]ownVar.Elevator_s)
 	elevators := make(map[string]ownVar.Elevator_s)
+
+	//Variables
+	var assignedOrders [N_GLOBALBUTTONTYPES][N_FLOORS]string
+	var orders ownVar.Orders_s
+	var bestElevator ownVar.Elevator_s
 	var orderCall ownVar.Order_call_s
-
 	orderCall.OrderType = ownVar.GLOBAL
-
 	ownIp := Get_own_ip()
+
+	//Do
 	for {
 		select {
 		case passElevators <- elevatorChan:
@@ -62,11 +65,11 @@ func Find_best_elevator(
 							orders.LocalOrders[i][j] = 1
 							fmt.Println("Find best Elev")
 							orderCall.OrderType = ownVar.LOCAL
-							addOrderChan <- orderCall
+							addOrderCostChan <- orderCall
 						} else if (bestElevator.Ip != ownIp) && (orders.LocalOrders[i][j] == 1) {
 							orders.LocalOrders[i][j] = 0
 							orderCall.OrderType = ownVar.STRICT_LOCAL
-							removeOrderChan <- orderCall
+							removeOrderCostChan <- orderCall
 
 						}
 					} else {

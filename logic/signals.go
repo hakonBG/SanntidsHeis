@@ -16,7 +16,7 @@ const (
 	BUTTON_COMMAND   = 2
 )
 
-func Poll_panel_orders(addOrderChan chan ownVar.Order_call_s, passOrders chan chan ownVar.Orders_s) {
+func Poll_panel_orders(addOrderElevChan chan ownVar.Order_call_s, passOrders chan chan ownVar.Orders_s) {
 	init_panel_lights()
 	panelOrderChan := make(chan ownVar.Orders_s)
 	var orders ownVar.Orders_s
@@ -32,16 +32,16 @@ func Poll_panel_orders(addOrderChan chan ownVar.Order_call_s, passOrders chan ch
 			for i := 0; i < N_FLOORS; i++ {
 				if (driver.Elev_get_button_signal(driver.BUTTON_COMMAND, i) == 1) && (orders.LocalOrders[BUTTON_COMMAND][i] == 0) {
 
-					addOrderChan <- order_call(i, driver.BUTTON_COMMAND)
+					addOrderElevChan <- order_call(i, driver.BUTTON_COMMAND)
 					orders.LocalOrders[BUTTON_COMMAND][i] = 1
 				}
 
 				if (i > 0) && (driver.Elev_get_button_signal(driver.BUTTON_CALL_DOWN, i) == 1) && (orders.GlobalOrders[BUTTON_CALL_DOWN][i] == 0) {
-					addOrderChan <- order_call(i, driver.BUTTON_CALL_DOWN)
+					addOrderElevChan <- order_call(i, driver.BUTTON_CALL_DOWN)
 					orders.GlobalOrders[BUTTON_CALL_DOWN][i] = 1
 				}
 				if (i < N_FLOORS-1) && (driver.Elev_get_button_signal(driver.BUTTON_CALL_UP, i) == 1) && (orders.GlobalOrders[BUTTON_CALL_UP][i] == 0) {
-					addOrderChan <- order_call(i, driver.BUTTON_CALL_UP)
+					addOrderElevChan <- order_call(i, driver.BUTTON_CALL_UP)
 					orders.GlobalOrders[BUTTON_CALL_UP][i] = 1
 				}
 

@@ -45,7 +45,7 @@ func Push_elevator(selfElevatorChan chan ownVar.Elevator_s) {
 }
 
 func Receive_add_global_order(
-	addOrderChan chan ownVar.Order_call_s,
+	addOrderUDPChan chan ownVar.Order_call_s,
 	passOrders chan chan ownVar.Orders_s) {
 	//Function Start
 
@@ -72,7 +72,7 @@ func Receive_add_global_order(
 				orderCall = Json_decode_order(msgOrder)
 				if orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] == 0 {
 					orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 1
-					addOrderChan <- orderCall
+					addOrderUDPChan <- orderCall
 				}
 
 			}
@@ -82,7 +82,7 @@ func Receive_add_global_order(
 
 }
 func Receive_remove_global_order(
-	removeOrderChan chan ownVar.Order_call_s,
+	removeOrderUDPChan chan ownVar.Order_call_s,
 	passOrders chan chan ownVar.Orders_s) {
 
 	//Start of function
@@ -93,24 +93,25 @@ func Receive_remove_global_order(
 	//Variables
 	ownIp := Get_own_ip()
 	globalOrderReadRemoveSocket := Set_up_udp_readSocket(REMOVE_GLOBAL_ORDER_PORT)
-
 	var orderCall ownVar.Order_call_s
 	var msgOrder []byte
 	var address string
 	var orders ownVar.Orders_s
+
+	//Do
 	for {
 		select {
 		case passOrders <- passOrdersChan:
 			orders = <-passOrdersChan
 		default:
 			msgOrder, address = Udp_receive_msg(globalOrderReadRemoveSocket)
-			fmt.Println("WOOHOHOHOHOHOHOH")
+			fmt.Println("recieved")
 			if address != ownIp {
-
+				fmt.Println("another elev")
 				orderCall = Json_decode_order(msgOrder)
 				if orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] == 1 {
 					orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 0
-					removeOrderChan <- orderCall
+					removeOrderUDPChan <- orderCall
 				}
 			}
 		}

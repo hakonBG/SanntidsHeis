@@ -19,7 +19,7 @@ const (
 func Motor_control(
 	passOrders chan chan ownVar.Orders_s,
 	floorSensorChan chan int,
-	removeOrderChan chan ownVar.Order_call_s,
+	removeOrderElevChan chan ownVar.Order_call_s,
 	selfElevatorChan chan ownVar.Elevator_s) {
 	//Start of function
 
@@ -57,17 +57,36 @@ func Motor_control(
 				timeCheckpoint = time.Now()
 
 				if direction == ownVar.UP {
-					orders.LocalOrders[BUTTON_CALL_UP][currentFloor] = 0
+					if orders.LocalOrders[BUTTON_CALL_UP][currentFloor] == 1 {
+						orderCall.OrderType = ownVar.GLOBAL
+						orderCall.ButtonType = driver.BUTTON_CALL_UP
+						orders.LocalOrders[BUTTON_CALL_UP][currentFloor] = 0
+					} else if orders.LocalOrders[BUTTON_CALL_DOWN][currentFloor] == 1 {
+						orderCall.OrderType = ownVar.GLOBAL
+						orderCall.ButtonType = driver.BUTTON_CALL_DOWN
+						orders.LocalOrders[BUTTON_CALL_DOWN][currentFloor] = 0
+					} else {
+						orderCall.OrderType = ownVar.LOCAL
+					}
 					orders.LocalOrders[BUTTON_COMMAND][currentFloor] = 0
 					orderCall.Floor = currentFloor
-					orderCall.ButtonType = driver.BUTTON_CALL_UP
-					removeOrderChan <- orderCall
+					removeOrderElevChan <- orderCall
+
 				} else if direction == ownVar.DOWN {
-					orders.LocalOrders[BUTTON_CALL_DOWN][currentFloor] = 0
+					if orders.LocalOrders[BUTTON_CALL_DOWN][currentFloor] == 1 {
+						orderCall.OrderType = ownVar.GLOBAL
+						orderCall.ButtonType = driver.BUTTON_CALL_DOWN
+						orders.LocalOrders[BUTTON_CALL_DOWN][currentFloor] = 0
+					} else if orders.LocalOrders[BUTTON_CALL_UP][currentFloor] == 1 {
+						orderCall.OrderType = ownVar.GLOBAL
+						orderCall.ButtonType = driver.BUTTON_CALL_UP
+						orders.LocalOrders[BUTTON_CALL_UP][currentFloor] = 0
+					} else {
+						orderCall.OrderType = ownVar.LOCAL
+					}
 					orders.LocalOrders[BUTTON_COMMAND][currentFloor] = 0
 					orderCall.Floor = currentFloor
-					orderCall.ButtonType = driver.BUTTON_CALL_DOWN
-					removeOrderChan <- orderCall
+					removeOrderElevChan <- orderCall
 				}
 
 			} else if nextFloor == -1 {
