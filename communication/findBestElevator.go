@@ -68,7 +68,7 @@ func Find_best_elevator(
 							addOrderCostChan <- orderCall
 						} else if (bestElevator.Ip != ownIp) && (orders.LocalOrders[i][j] == 1) {
 							orders.LocalOrders[i][j] = 0
-							orderCall.OrderType = ownVar.STRICT_LOCAL
+
 							removeOrderCostChan <- orderCall
 
 						}

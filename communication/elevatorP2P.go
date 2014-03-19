@@ -103,17 +103,17 @@ func Receive_remove_global_order(
 		select {
 		case passOrders <- passOrdersChan:
 			orders = <-passOrdersChan
-		default:
 			msgOrder, address = Udp_receive_msg(globalOrderReadRemoveSocket)
 			fmt.Println("recieved")
 			if address != ownIp {
-				fmt.Println("another elev")
+				fmt.Println("another elev whit global Order:", orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor])
 				orderCall = Json_decode_order(msgOrder)
 				if orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] == 1 {
 					orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 0
 					removeOrderUDPChan <- orderCall
 				}
 			}
+
 		}
 
 	}
@@ -151,3 +151,5 @@ func Push_remove_global_order(pushRemoveGlobalOrderChan chan ownVar.Order_call_s
 		}
 	}
 }
+
+//func Update_lost_elevator()

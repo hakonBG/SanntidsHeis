@@ -49,7 +49,7 @@ func Motor_control(
 			elevator.NextFloor = nextFloor
 			elevator.Direction = direction
 
-			if nextFloor == currentFloor {
+			if (nextFloor == currentFloor) && (readyToGo) {
 				fmt.Println("NEXTFLOOR == CURRENT")
 				//fmt.Printf("Direction: %d\n", direction)
 				stopped = stop_motor(breakDirection, stopped)
@@ -133,7 +133,9 @@ func run_motor(direction ownVar.Direction_t, stopped bool) bool {
 	return false
 }
 
-func stop_motor(breakDirection ownVar.Direction_t, stopped bool) bool {
+func stop_motor(
+	breakDirection ownVar.Direction_t,
+	stopped bool) bool {
 	if !stopped {
 		if breakDirection == ownVar.UP {
 			driver.Elev_set_speed(-100)

@@ -42,24 +42,25 @@ func Handle_orders(
 		select {
 		case orderCall = <-removeOrderElevChan:
 
-			orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 0
 			orders.LocalOrders[orderCall.ButtonType][orderCall.Floor] = 0
 			orders.LocalOrders[BUTTON_COMMAND][orderCall.Floor] = 0
 			if orderCall.OrderType == ownVar.GLOBAL {
+				orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 0
 				pushRemoveGlobalOrderChan <- orderCall
 				fmt.Println("Remove global elev Order ")
 			} else {
 				fmt.Println("Remove COmmand ORder")
 			}
+			fmt.Println("ButtonType:", orderCall.ButtonType, "OrderFloor:", orderCall.Floor)
 
 		case orderCall = <-removeOrderUDPChan:
 			orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 0
 			fmt.Println("Remove UDPglobal Order")
-
+			fmt.Println("ButtonType:", orderCall.ButtonType, "OrderFloor:", orderCall.Floor)
 		case orderCall = <-removeOrderCostChan:
 			orders.LocalOrders[orderCall.ButtonType][orderCall.Floor] = 0
 			fmt.Println("Remove localordercost")
-
+			fmt.Println("ButtonType:", orderCall.ButtonType, "OrderFloor:", orderCall.Floor)
 		case orderCall = <-addOrderElevChan:
 			if orderCall.OrderType == ownVar.LOCAL {
 				orders.LocalOrders[orderCall.ButtonType][orderCall.Floor] = 1
@@ -69,15 +70,16 @@ func Handle_orders(
 				pushAddGlobalOrderChan <- orderCall
 
 			}
+			fmt.Println("ButtonType:", orderCall.ButtonType, "OrderFloor:", orderCall.Floor)
 
 		case orderCall = <-addOrderUDPChan:
 			orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 1
 			fmt.Println("legger til UDPglobal")
-
+			fmt.Println("ButtonType:", orderCall.ButtonType, "OrderFloor:", orderCall.Floor)
 		case orderCall = <-addOrderCostChan:
 			orders.LocalOrders[orderCall.ButtonType][orderCall.Floor] = 1
 			fmt.Println("legger til localCost")
-
+			fmt.Println("ButtonType:", orderCall.ButtonType, "OrderFloor:", orderCall.Floor)
 		case passOrdersChan = <-passOrders:
 
 			passOrdersChan <- orders

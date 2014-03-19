@@ -21,10 +21,12 @@ func main() {
 	removeOrderElevChan := make(chan ownVar.Order_call_s)
 	removeOrderUDPChan := make(chan ownVar.Order_call_s)
 	removeOrderCostChan := make(chan ownVar.Order_call_s)
+	updateNewElevatorChan := make(chan ownVar.Elevator_s)
 
 	floorSensorchan := make(chan int)
 	selfElevatorChan, addElevatorChan, removeElevatorChan := make(chan ownVar.Elevator_s), make(chan ownVar.Elevator_s), make(chan ownVar.Elevator_s)
 	passElevators := make(chan chan map[string]ownVar.Elevator_s)
+	passLostElevators := make(chan chan map[string]ownVar.Elevator_s)
 	passOrders := make(chan chan ownVar.Orders_s)
 	exit := make(chan int)
 	pushAddGlobalOrderChan := make(chan ownVar.Order_call_s)
@@ -48,9 +50,11 @@ func main() {
 	go communication.Push_add_global_order(pushAddGlobalOrderChan)
 	go communication.Push_remove_global_order(pushRemoveGlobalOrderChan)
 
-	go communication.Handle_elevators(addElevatorChan, removeElevatorChan, passElevators)
+	go communication.Handle_elevators(addElevatorChan, removeElevatorChan, passElevators, passLostElevators, updateNewElevatorChan)
+	go communication.Detect_lost_elevators(removeElevatorChan, passElevators)
 	go communication.Find_best_elevator(passOrders, passElevators, addOrderCostChan, removeOrderCostChan, assignedOrdersChan)
 	//go communication.Merge_global_orders(passOrders, passElevators, assignedOrdersChan, removeOrderChan, addOrderChan)
 
 	<-exit
+
 }
