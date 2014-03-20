@@ -19,7 +19,6 @@ func Receive_elevator(addElevatorChan chan ownVar.Elevator_s) {
 	for {
 
 		msgElev, connAddress = Udp_receive_msg(elevatorReadSocket)
-
 		elevator = Json_decode_elevator(msgElev)
 		elevator.Ip = connAddress
 		elevator.LastTime = time.Now()
@@ -36,7 +35,7 @@ func Push_elevator(selfElevatorChan chan ownVar.Elevator_s) {
 	for {
 
 		elevator = <-selfElevatorChan
-
+		//fmt.Println("pushin elev")
 		sendMsg = Json_encode_elevator(elevator)
 		Udp_send_msg(elevatorSendSocket, sendMsg)
 

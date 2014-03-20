@@ -14,11 +14,13 @@ const (
 	ELEVATOR_STRUCT_PORT     = "32373"
 	ADD_GLOBAL_ORDER_PORT    = "42718"
 	REMOVE_GLOBAL_ORDER_PORT = "42714"
+	NEW_ELEVATOR_SPAM_PORT   = "36879"
+	NEW_ELEVATOR_PORT        = "35926"
 
-	CONN_TYPE = "udp4"
+	CONN_TYPE_UDP = "udp4"
 )
 
-func check_error(err error) {
+func Check_error(err error) {
 	if err != nil {
 		Println("Error dialing", err.Error())
 	}
@@ -28,10 +30,10 @@ func check_error(err error) {
 func Set_up_udp_readSocket(port string) *net.UDPConn {
 	Println("Setup Readsocket")
 
-	udpReadAddress, err := net.ResolveUDPAddr(CONN_TYPE, CONN_HOST+":"+port)
-	check_error(err)
-	udpReadSocket, err := net.ListenUDP(CONN_TYPE, udpReadAddress)
-	check_error(err)
+	udpReadAddress, err := net.ResolveUDPAddr(CONN_TYPE_UDP, CONN_HOST+":"+port)
+	Check_error(err)
+	udpReadSocket, err := net.ListenUDP(CONN_TYPE_UDP, udpReadAddress)
+	Check_error(err)
 	Println("read fin")
 	return udpReadSocket
 
@@ -40,10 +42,10 @@ func Set_up_udp_readSocket(port string) *net.UDPConn {
 func Set_up_udp_sendSocket(port string) *net.UDPConn {
 	Println("Setup Broadsocket")
 
-	udpBroadcastAddress, err := net.ResolveUDPAddr(CONN_TYPE, CONN_HOST+":"+port)
-	check_error(err)
-	udpBroadcastSocket, err := net.DialUDP(CONN_TYPE, nil, udpBroadcastAddress)
-	check_error(err)
+	udpBroadcastAddress, err := net.ResolveUDPAddr(CONN_TYPE_UDP, CONN_HOST+":"+port)
+	Check_error(err)
+	udpBroadcastSocket, err := net.DialUDP(CONN_TYPE_UDP, nil, udpBroadcastAddress)
+	Check_error(err)
 	Println("BroadFin")
 	return udpBroadcastSocket
 
@@ -53,7 +55,7 @@ func Udp_receive_msg(udpReadSocket *net.UDPConn) ([]byte, string) {
 
 	msg := make([]byte, 1024)
 	length, address, err := udpReadSocket.ReadFromUDP(msg)
-	check_error(err)
+	Check_error(err)
 
 	return msg[:length], strings.Split(address.String(), ":")[0]
 
@@ -62,7 +64,7 @@ func Udp_receive_msg(udpReadSocket *net.UDPConn) ([]byte, string) {
 func Udp_send_msg(udpBroadcastSocket *net.UDPConn, msg []byte) {
 
 	_, err := udpBroadcastSocket.Write(msg)
-	check_error(err)
+	Check_error(err)
 
 }
 

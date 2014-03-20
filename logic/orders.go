@@ -24,7 +24,8 @@ func Handle_orders(
 	removeOrderCostChan chan ownVar.Order_call_s,
 	passOrders chan chan ownVar.Orders_s,
 	pushAddGlobalOrderChan chan ownVar.Order_call_s,
-	pushRemoveGlobalOrderChan chan ownVar.Order_call_s) {
+	pushRemoveGlobalOrderChan chan ownVar.Order_call_s,
+	ordersWhenNewChan chan [N_BUTTONTYPES][N_FLOORS]int) {
 	//Start of function
 
 	//Channels
@@ -36,6 +37,18 @@ func Handle_orders(
 
 	orders.LocalOrders = Init_localOrders()
 	orders.GlobalOrders = Init_globalOrders()
+
+	var systemOrders [N_BUTTONTYPES][N_FLOORS]int
+
+	//CHeck if allready orders in system
+	select {
+	case systemOrders = <-ordersWhenNewChan:
+		fmt.Println("Fikk ordre")
+		orders.GlobalOrders[BUTTON_CALL_UP] = systemOrders[BUTTON_CALL_UP]
+		orders.GlobalOrders[BUTTON_CALL_DOWN] = systemOrders[BUTTON_CALL_DOWN]
+		orders.LocalOrders[BUTTON_COMMAND] = systemOrders[BUTTON_COMMAND]
+	default:
+	}
 
 	//Do
 	for {
@@ -68,6 +81,7 @@ func Handle_orders(
 			} else if orderCall.OrderType == ownVar.GLOBAL {
 				orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 1
 				pushAddGlobalOrderChan <- orderCall
+				fmt.Println("legger til global elev")
 
 			}
 			fmt.Println("ButtonType:", orderCall.ButtonType, "OrderFloor:", orderCall.Floor)

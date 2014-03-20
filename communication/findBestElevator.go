@@ -60,7 +60,7 @@ func Find_best_elevator(
 						orderCall.OrderType = ownVar.GLOBAL
 						bestElevator = find_min_elev(elevators, orderCall)
 						assignedOrders[i][j] = bestElevator.Ip
-
+						//fmt.Println(bestElevator.Ip)
 						if (bestElevator.Ip == ownIp) && (orders.LocalOrders[i][j] == 0) {
 							orders.LocalOrders[i][j] = 1
 							fmt.Println("Find best Elev")
