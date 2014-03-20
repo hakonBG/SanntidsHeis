@@ -45,8 +45,10 @@ func main() {
 	assignedOrdersChan := make(chan [ownVar.N_GLOBALBUTTONTYPES][ownVar.N_FLOORS]string)
 
 	//New elevator Routine
+
 	go communication.Im_new_spam(
 		exitImNewChan)
+
 	go communication.Handle_msg_when_new(
 		exitImNewChan,
 		startElevatorProgram,
@@ -70,12 +72,16 @@ func main() {
 		addOrderCostChan,
 		removeOrderCostChan,
 		assignedOrdersChan)
-	go communication.Find_new_elevator(
-		newElevatorFoundChan)
+
 	go communication.Update_new_elevator(
 		passOrders,
 		newElevatorFoundChan,
 		passLostElevators)
+	go communication.Find_new_elevator(
+		newElevatorFoundChan)
+	go communication.Detect_lost_elevators(
+		removeElevatorChan,
+		passElevators)
 
 	//Elevator Control Routines
 	go logic.Poll_panel_orders(

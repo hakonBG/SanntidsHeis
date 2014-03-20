@@ -4,7 +4,7 @@ import (
 	"./../driver"
 	"./../ownVar"
 	//"fmt"
-	//"time"
+	"time"
 )
 
 func Adjust_lights(passOrders chan chan ownVar.Orders_s) {
@@ -18,6 +18,7 @@ func Adjust_lights(passOrders chan chan ownVar.Orders_s) {
 
 			set_lights(orders)
 		}
+		<-time.After(25 * time.Millisecond)
 
 	}
 

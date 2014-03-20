@@ -2,11 +2,10 @@ package communication
 
 import (
 	"./../ownVar"
-	//"fmt"
+	"fmt"
 	"time"
 )
 
-/*
 func Detect_lost_elevators(
 	removeElevatorChan chan ownVar.Elevator_s,
 	passElevators chan chan map[string]ownVar.Elevator_s) {
@@ -31,7 +30,7 @@ func Detect_lost_elevators(
 		}
 	}
 }
-*/
+
 func Update_new_elevator(
 	passOrders chan chan ownVar.Orders_s,
 	newElevatorFoundChan chan string,
@@ -73,6 +72,7 @@ func Update_new_elevator(
 			}
 
 		}
+		<-time.After(25 * time.Millisecond)
 
 	}
 }
@@ -83,7 +83,7 @@ func Find_new_elevator(newElevatorFoundChan chan string) {
 	for {
 		_, address = Udp_receive_msg(discoverNewElevatorSocket)
 		newElevatorFoundChan <- address
-
+		<-time.After(25 * time.Millisecond)
 	}
 
 }
@@ -94,9 +94,11 @@ func Receive_msg_when_new(
 
 	//Sockets
 	newOrdersSocket := Set_up_udp_readSocket(NEW_ELEVATOR_PORT)
+
 	for {
 
 		msg, _ := Udp_receive_msg(newOrdersSocket)
+
 		elev := Json_decode_elevator(msg)
 		ReceiveNewMsgChan <- elev
 	}
@@ -105,15 +107,24 @@ func Receive_msg_when_new(
 
 func Im_new_spam(exitImNewChan chan int) {
 	imNewSocket := Set_up_udp_sendSocket(NEW_ELEVATOR_SPAM_PORT)
-	sendMsg := []byte("im new")
+	myStr := "im new"
+	sendMsg := []byte(myStr)
+	finished := false
 	for {
 		select {
 		case <-exitImNewChan:
+
+			finished = true
+			//imNewSocket.Close()
 			break
 		default:
 			Udp_send_msg(imNewSocket, sendMsg)
 		}
+		if finished {
+			break
+		}
 	}
+	fmt.Println("Stop spamming")
 
 }
 
@@ -128,27 +139,35 @@ func Handle_msg_when_new(
 	var elev ownVar.Elevator_s
 	ownIp := Get_own_ip()
 	timer := time.Now()
-
+	finished := false
 	for {
 
 		select {
 		case elev = <-ReceiveNewMsgChan:
 			if elev.Ip == ownIp {
+				fmt.Println("elevip = ownip")
 				ordersWhenNewChan <- elev.Orders
 				exitImNewChan <- 1
 				startElevatorProgram <- 1
-
+				finished = true
 				break
 			}
 		default:
 			if time.Now().Sub(timer) > 2*time.Second {
+				fmt.Println("timer out")
 				exitImNewChan <- 1
 				startElevatorProgram <- 1
+				finished = true
 				break
 			}
+
+		}
+		if finished {
+			break
 		}
 
 	}
+	fmt.Println("finished handle msg")
 
 }
 
