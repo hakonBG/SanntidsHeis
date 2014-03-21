@@ -14,10 +14,10 @@ const (
 )
 
 func Handle_elevators(
-	addElevatorChan chan ownVar.Elevator_s,
-	removeElevatorChan chan ownVar.Elevator_s,
-	passElevators chan chan map[string]ownVar.Elevator_s,
-	passLostElevators chan chan map[string]ownVar.Elevator_s) {
+	addElevatorChan <-chan ownVar.Elevator_s,
+	removeElevatorChan <-chan ownVar.Elevator_s,
+	passElevators <-chan chan map[string]ownVar.Elevator_s,
+	passLostElevators <-chan chan map[string]ownVar.Elevator_s) {
 	//Start of function
 
 	//Channels
@@ -35,6 +35,9 @@ func Handle_elevators(
 		case passElevatorsChan = <-passLostElevators:
 			passElevatorsChan <- lostElevators
 		case elev = <-addElevatorChan:
+			if check_for_elevator_in_map(elev, lostElevators) {
+				delete(lostElevators, elev.Ip)
+			}
 			elevators[elev.Ip] = elev
 		case elev = <-removeElevatorChan:
 			delete(elevators, elev.Ip)

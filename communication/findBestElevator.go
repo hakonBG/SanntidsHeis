@@ -13,12 +13,12 @@ const (
 	N_GLOBALBUTTONTYPES = ownVar.N_GLOBALBUTTONTYPES
 )
 
-func Find_best_elevator(
+//Find which global orders are best suited for this elevator
+func Assign_global_orders(
 	passOrders chan chan ownVar.Orders_s,
 	passElevators chan chan map[string]ownVar.Elevator_s,
 	addOrderCostChan chan ownVar.Order_call_s,
-	removeOrderCostChan chan ownVar.Order_call_s,
-	assignedOrdersChan chan [N_GLOBALBUTTONTYPES][N_FLOORS]string) {
+	removeOrderCostChan chan ownVar.Order_call_s) {
 	//Start of function
 
 	//Channels
@@ -27,7 +27,6 @@ func Find_best_elevator(
 	elevators := make(map[string]ownVar.Elevator_s)
 
 	//Variables
-	var assignedOrders [N_GLOBALBUTTONTYPES][N_FLOORS]string
 	var orders ownVar.Orders_s
 	var bestElevator ownVar.Elevator_s
 	var orderCall ownVar.Order_call_s
@@ -41,7 +40,6 @@ func Find_best_elevator(
 			elevators = <-elevatorChan
 		case passOrders <- orderChan:
 			orders = <-orderChan
-		case assignedOrdersChan <- assignedOrders:
 
 		default:
 
@@ -59,7 +57,6 @@ func Find_best_elevator(
 						orderCall.Floor = j
 						orderCall.OrderType = ownVar.GLOBAL
 						bestElevator = find_min_elev(elevators, orderCall)
-						assignedOrders[i][j] = bestElevator.Ip
 						//fmt.Println(bestElevator.Ip)
 						if (bestElevator.Ip == ownIp) && (orders.LocalOrders[i][j] == 0) {
 							orders.LocalOrders[i][j] = 1
@@ -70,17 +67,10 @@ func Find_best_elevator(
 							orders.LocalOrders[i][j] = 0
 
 							removeOrderCostChan <- orderCall
-
 						}
-					} else {
-						assignedOrders[i][j] = "tom"
 					}
-
 				}
-
 			}
-			//assignedOrdersChan <- assignedOrders
-			//fmt.Println(assignedOrders)
 
 		}
 
@@ -91,8 +81,8 @@ func Find_best_elevator(
 func elev_cost(
 	elev ownVar.Elevator_s,
 	order ownVar.Order_call_s) int {
-
 	//Start of function
+
 	value := 0
 	if order.ButtonType == driver.BUTTON_CALL_UP {
 		if elev.NextFloor == order.Floor {

@@ -4,9 +4,6 @@ import (
 	. "fmt"
 	"net"
 	"strings"
-
-	//. "strings"
-	//. "os"
 )
 
 const (
@@ -16,6 +13,7 @@ const (
 	REMOVE_GLOBAL_ORDER_PORT = "42714"
 	NEW_ELEVATOR_SPAM_PORT   = "36279"
 	NEW_ELEVATOR_PORT        = "35826"
+	CHECK_NETWORK_CONN_PORT  = "38791"
 
 	CONN_TYPE_UDP = "udp4"
 )
@@ -23,6 +21,7 @@ const (
 func Check_error(err error) {
 	if err != nil {
 		Println("Error dialing", err.Error())
+
 	}
 
 }

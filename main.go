@@ -14,6 +14,8 @@ import (
 func main() {
 	GOMAXPROCS(NumCPU())
 
+	//Network Connection Chans
+
 	//Init chans
 	exitImNewChan := make(chan int)
 	startElevatorProgram := make(chan int)
@@ -35,14 +37,14 @@ func main() {
 	passElevators := make(chan chan map[string]ownVar.Elevator_s)
 	passLostElevators := make(chan chan map[string]ownVar.Elevator_s)
 	passOrders := make(chan chan ownVar.Orders_s)
-	exit := make(chan int)
+
+	exit := make(chan bool)
+
 	pushAddGlobalOrderChan := make(chan ownVar.Order_call_s)
 	pushRemoveGlobalOrderChan := make(chan ownVar.Order_call_s)
 
 	driver.Elev_init()
 	logic.Init_elevator()
-
-	assignedOrdersChan := make(chan [ownVar.N_GLOBALBUTTONTYPES][ownVar.N_FLOORS]string)
 
 	//New elevator Routine
 
@@ -66,12 +68,11 @@ func main() {
 		passElevators,
 		passLostElevators)
 
-	go communication.Find_best_elevator(
+	go communication.Assign_global_orders(
 		passOrders,
 		passElevators,
 		addOrderCostChan,
-		removeOrderCostChan,
-		assignedOrdersChan)
+		removeOrderCostChan)
 
 	go communication.Update_new_elevator(
 		passOrders,
@@ -107,6 +108,7 @@ func main() {
 		selfElevatorChan)
 	go logic.Adjust_lights(
 		passOrders)
+	go logic.NotifyCtrlC()
 
 	//Communication Orders Routines
 	go communication.Push_elevator(
