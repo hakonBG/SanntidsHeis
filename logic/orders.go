@@ -25,7 +25,8 @@ func Handle_orders(
 	passOrders chan chan ownVar.Orders_s,
 	pushAddGlobalOrderChan chan ownVar.Order_call_s,
 	pushRemoveGlobalOrderChan chan ownVar.Order_call_s,
-	ordersWhenNewChan chan [N_BUTTONTYPES][N_FLOORS]int) {
+	ordersWhenNewChan chan [N_BUTTONTYPES][N_FLOORS]int,
+	newGlobalOrdersChan chan [N_GLOBALBUTTONTYPES][N_FLOORS]int) {
 	//Start of function
 
 	//Channels
@@ -39,6 +40,7 @@ func Handle_orders(
 	orders.GlobalOrders = Init_globalOrders()
 
 	var systemOrders [N_BUTTONTYPES][N_FLOORS]int
+	var newGlobalOrders [N_GLOBALBUTTONTYPES][N_FLOORS]int
 
 	//CHeck if allready orders in system
 	select {
@@ -97,6 +99,9 @@ func Handle_orders(
 		case passOrdersChan = <-passOrders:
 
 			passOrdersChan <- orders
+
+		case newGlobalOrders = <-newGlobalOrdersChan:
+			orders.GlobalOrders = newGlobalOrders
 		}
 
 	}

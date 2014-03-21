@@ -35,9 +35,10 @@ func Push_elevator(selfElevatorChan chan ownVar.Elevator_s) {
 	for {
 
 		elevator = <-selfElevatorChan
-		//fmt.Println("pushin elev")
+		fmt.Println("pushin elev")
 		sendMsg = Json_encode_elevator(elevator)
 		Udp_send_msg(elevatorSendSocket, sendMsg)
+		<-time.After(75 * time.Millisecond)
 
 	}
 

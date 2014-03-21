@@ -68,8 +68,17 @@ func Udp_send_msg(udpBroadcastSocket *net.UDPConn, msg []byte) {
 }
 
 func Get_own_ip() string {
+
 	googleAddress, _ := net.ResolveTCPAddr("tcp", "www.google.com:80")
-	googleConn, _ := net.DialTCP("tcp", nil, googleAddress)
+	googleConn, err := net.DialTCP("tcp", nil, googleAddress)
+	for {
+		Println("waitin for IP")
+		if err == nil {
+			break
+		}
+		googleConn, err = net.DialTCP("tcp", nil, googleAddress)
+	}
+
 	Ip := strings.Split(googleConn.LocalAddr().String(), ":")[0]
 	googleConn.Close()
 	return Ip

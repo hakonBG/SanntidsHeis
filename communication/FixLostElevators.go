@@ -3,6 +3,7 @@ package communication
 import (
 	"./../ownVar"
 	"fmt"
+	"net"
 	"time"
 )
 
@@ -17,6 +18,7 @@ func Detect_lost_elevators(
 
 	//Variables
 	var elevators map[string]ownVar.Elevator_s
+
 	for {
 		select {
 		case passElevators <- passElevatorsChan:
@@ -80,20 +82,24 @@ func Update_new_elevator(
 func Find_new_elevator(newElevatorFoundChan chan string) {
 	discoverNewElevatorSocket := Set_up_udp_readSocket(NEW_ELEVATOR_SPAM_PORT)
 	var address string
+	ownIp := Get_own_ip()
 	for {
 		_, address = Udp_receive_msg(discoverNewElevatorSocket)
-		newElevatorFoundChan <- address
+		if address != ownIp {
+			newElevatorFoundChan <- address
+		}
+
 		<-time.After(25 * time.Millisecond)
 	}
 
 }
 
 func Receive_msg_when_new(
-	ReceiveNewMsgChan chan ownVar.Elevator_s) {
+	ReceiveNewMsgChan chan ownVar.Elevator_s,
+	newOrdersSocket *net.UDPConn) {
 	//Start of function
 
 	//Sockets
-	newOrdersSocket := Set_up_udp_readSocket(NEW_ELEVATOR_PORT)
 
 	for {
 
@@ -105,8 +111,10 @@ func Receive_msg_when_new(
 
 }
 
-func Im_new_spam(exitImNewChan chan int) {
-	imNewSocket := Set_up_udp_sendSocket(NEW_ELEVATOR_SPAM_PORT)
+func Im_new_spam(
+	exitImNewChan chan int,
+	imNewSocket *net.UDPConn) {
+
 	myStr := "im new"
 	sendMsg := []byte(myStr)
 	finished := false
@@ -117,12 +125,14 @@ func Im_new_spam(exitImNewChan chan int) {
 			finished = true
 			//imNewSocket.Close()
 			break
-		default:
+		case <-time.After(100 * time.Millisecond):
 			Udp_send_msg(imNewSocket, sendMsg)
+			fmt.Println("spamming")
 		}
 		if finished {
 			break
 		}
+
 	}
 	fmt.Println("Stop spamming")
 

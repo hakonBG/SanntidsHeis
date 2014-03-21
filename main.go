@@ -14,7 +14,10 @@ import (
 func main() {
 	GOMAXPROCS(NumCPU())
 
+	//IP
+	ownIp := communication.Get_own_ip()
 	//Network Connection Chans
+	networkUpAgainChan := make(chan bool)
 
 	//Init chans
 	exitImNewChan := make(chan int)
@@ -22,6 +25,7 @@ func main() {
 	ReceiveNewMsgChan := make(chan ownVar.Elevator_s)
 
 	//Elev OrderChans
+	newGlobalOrdersChan := make(chan [ownVar.N_GLOBALBUTTONTYPES][ownVar.N_FLOORS]int)
 	ordersWhenNewChan := make(chan [ownVar.N_BUTTONTYPES][ownVar.N_FLOORS]int, 1)
 	addOrderElevChan := make(chan ownVar.Order_call_s)
 	addOrderUDPChan := make(chan ownVar.Order_call_s)
@@ -46,10 +50,15 @@ func main() {
 	driver.Elev_init()
 	logic.Init_elevator()
 
+	//Sockets for global updating
+	imNewSocket := communication.Set_up_udp_sendSocket(communication.NEW_ELEVATOR_SPAM_PORT)
+	newOrdersSocket := communication.Set_up_udp_readSocket(communication.NEW_ELEVATOR_PORT)
+
 	//New elevator Routine
 
 	go communication.Im_new_spam(
-		exitImNewChan)
+		exitImNewChan,
+		imNewSocket)
 
 	go communication.Handle_msg_when_new(
 		exitImNewChan,
@@ -57,7 +66,8 @@ func main() {
 		ordersWhenNewChan,
 		ReceiveNewMsgChan)
 	go communication.Receive_msg_when_new(
-		ReceiveNewMsgChan)
+		ReceiveNewMsgChan,
+		newOrdersSocket)
 
 	<-startElevatorProgram
 
@@ -100,7 +110,8 @@ func main() {
 		passOrders,
 		pushAddGlobalOrderChan,
 		pushRemoveGlobalOrderChan,
-		ordersWhenNewChan)
+		ordersWhenNewChan,
+		newGlobalOrdersChan)
 	go logic.Motor_control(
 		passOrders,
 		floorSensorchan,
@@ -109,6 +120,18 @@ func main() {
 	go logic.Adjust_lights(
 		passOrders)
 	go logic.NotifyCtrlC()
+
+	//Network down HAndlers
+	go communication.Check_network_connection_down(
+		networkUpAgainChan)
+	go communication.Get_global_orders_if_network_down(
+		networkUpAgainChan,
+		exitImNewChan,
+		newGlobalOrdersChan,
+		ReceiveNewMsgChan,
+		imNewSocket,
+		newOrdersSocket,
+		ownIp)
 
 	//Communication Orders Routines
 	go communication.Push_elevator(
