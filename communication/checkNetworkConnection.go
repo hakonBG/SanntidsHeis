@@ -8,9 +8,9 @@ import (
 )
 
 func Handle_msg_when_network_down(
-	exitImNewChan chan int,
-	newGlobalOrdersChan chan [N_GLOBALBUTTONTYPES][N_FLOORS]int,
-	ReceiveNewMsgChan chan ownVar.Elevator_s,
+	exitImNewChan chan<- int,
+	newGlobalOrdersChan chan<- [N_GLOBALBUTTONTYPES][N_FLOORS]int,
+	ReceiveNewMsgChan <-chan ownVar.Elevator_s,
 	ownIp string) {
 
 	//Variables
@@ -20,6 +20,7 @@ func Handle_msg_when_network_down(
 	finished := false
 	var newGlobalOrders [N_GLOBALBUTTONTYPES][N_FLOORS]int
 
+	//Do
 	for {
 
 		select {
@@ -36,25 +37,20 @@ func Handle_msg_when_network_down(
 				break
 			}
 		default:
-
 			if time.Now().Sub(timer) > 2*time.Second {
 				fmt.Println("timer out")
 				exitImNewChan <- 1
 				finished = true
 				break
 			}
-
 		}
-
 		if finished {
 			break
 		}
-
 	}
-
 }
 
-func Check_network_connection_down(networkUpAgainChan chan bool) {
+func Check_network_connection_down(networkUpAgainChan chan<- bool) {
 
 	//Sockets
 	networkUpAddress, err := net.ResolveUDPAddr(CONN_TYPE_UDP, CONN_HOST+":"+CHECK_NETWORK_CONN_PORT)
@@ -74,13 +70,11 @@ func Check_network_connection_down(networkUpAgainChan chan bool) {
 			networkUpAgainChan <- true
 		}
 		<-time.After(25 * time.Millisecond)
-
 	}
-
 }
 
 func Get_global_orders_if_network_down(
-	networkUpAgainChan chan bool,
+	networkUpAgainChan <-chan bool,
 	exitImNewChan chan int,
 	newGlobalOrdersChan chan [N_GLOBALBUTTONTYPES][N_FLOORS]int,
 	ReceiveNewMsgChan chan ownVar.Elevator_s,

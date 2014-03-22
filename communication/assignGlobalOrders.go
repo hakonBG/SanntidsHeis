@@ -15,10 +15,10 @@ const (
 
 //Find which global orders are best suited for this elevator
 func Assign_global_orders(
-	passOrders chan chan ownVar.Orders_s,
-	passElevators chan chan map[string]ownVar.Elevator_s,
-	addOrderCostChan chan ownVar.Order_call_s,
-	removeOrderCostChan chan ownVar.Order_call_s) {
+	passOrders chan<- chan ownVar.Orders_s,
+	passElevators chan<- chan map[string]ownVar.Elevator_s,
+	addOrderCostChan chan<- ownVar.Order_call_s,
+	removeOrderCostChan chan<- ownVar.Order_call_s) {
 	//Start of function
 
 	//Channels
@@ -60,7 +60,7 @@ func Assign_global_orders(
 						//fmt.Println(bestElevator.Ip)
 						if (bestElevator.Ip == ownIp) && (orders.LocalOrders[i][j] == 0) {
 							orders.LocalOrders[i][j] = 1
-							fmt.Println("Find best Elev")
+							fmt.Println("Assign global order")
 							orderCall.OrderType = ownVar.LOCAL
 							addOrderCostChan <- orderCall
 						} else if (bestElevator.Ip != ownIp) && (orders.LocalOrders[i][j] == 1) {
@@ -71,11 +71,8 @@ func Assign_global_orders(
 					}
 				}
 			}
-
 		}
-
 	}
-
 }
 
 func elev_cost(
@@ -138,7 +135,6 @@ func elev_cost(
 		}
 	}
 	return value
-
 }
 
 func find_min_elev(elevators map[string]ownVar.Elevator_s, order ownVar.Order_call_s) ownVar.Elevator_s {
@@ -157,9 +153,6 @@ func find_min_elev(elevators map[string]ownVar.Elevator_s, order ownVar.Order_ca
 				minElev = elev
 			}
 		}
-		//fmt.Println(elev.Ip, elevCost)
 	}
-	//fmt.Println("--------")
-
 	return minElev
 }

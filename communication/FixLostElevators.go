@@ -8,9 +8,8 @@ import (
 )
 
 func Detect_lost_elevators(
-	removeElevatorChan chan ownVar.Elevator_s,
-	passElevators chan chan map[string]ownVar.Elevator_s) {
-
+	removeElevatorChan chan<- ownVar.Elevator_s,
+	passElevators chan<- chan map[string]ownVar.Elevator_s) {
 	//Start of function
 
 	//Channels
@@ -19,6 +18,7 @@ func Detect_lost_elevators(
 	//Variables
 	var elevators map[string]ownVar.Elevator_s
 
+	//Do
 	for {
 		select {
 		case passElevators <- passElevatorsChan:
@@ -34,9 +34,9 @@ func Detect_lost_elevators(
 }
 
 func Update_new_elevator(
-	passOrders chan chan ownVar.Orders_s,
-	newElevatorFoundChan chan string,
-	passLostElevators chan chan map[string]ownVar.Elevator_s) {
+	passOrders chan<- chan ownVar.Orders_s,
+	newElevatorFoundChan <-chan string,
+	passLostElevators chan<- chan map[string]ownVar.Elevator_s) {
 	//Start Of Function
 
 	//Sockets
@@ -75,11 +75,10 @@ func Update_new_elevator(
 
 		}
 		<-time.After(25 * time.Millisecond)
-
 	}
 }
 
-func Find_new_elevator(newElevatorFoundChan chan string) {
+func Find_new_elevator(newElevatorFoundChan chan<- string) {
 	discoverNewElevatorSocket := Set_up_udp_readSocket(NEW_ELEVATOR_SPAM_PORT)
 	var address string
 	ownIp := Get_own_ip()
@@ -88,18 +87,14 @@ func Find_new_elevator(newElevatorFoundChan chan string) {
 		if address != ownIp {
 			newElevatorFoundChan <- address
 		}
-
 		<-time.After(25 * time.Millisecond)
 	}
-
 }
 
 func Receive_msg_when_new(
-	ReceiveNewMsgChan chan ownVar.Elevator_s,
+	ReceiveNewMsgChan chan<- ownVar.Elevator_s,
 	newOrdersSocket *net.UDPConn) {
 	//Start of function
-
-	//Sockets
 
 	for {
 
@@ -108,11 +103,10 @@ func Receive_msg_when_new(
 		elev := Json_decode_elevator(msg)
 		ReceiveNewMsgChan <- elev
 	}
-
 }
 
 func Im_new_spam(
-	exitImNewChan chan int,
+	exitImNewChan <-chan int,
 	imNewSocket *net.UDPConn) {
 
 	myStr := "im new"
@@ -121,28 +115,23 @@ func Im_new_spam(
 	for {
 		select {
 		case <-exitImNewChan:
-
 			finished = true
-			//imNewSocket.Close()
 			break
 		case <-time.After(100 * time.Millisecond):
 			Udp_send_msg(imNewSocket, sendMsg)
-			fmt.Println("spamming")
 		}
 		if finished {
 			break
 		}
-
 	}
 	fmt.Println("Stop spamming")
-
 }
 
 func Handle_msg_when_new(
-	exitImNewChan chan int,
-	startElevatorProgram chan int,
-	ordersWhenNewChan chan [N_BUTTONTYPES][N_FLOORS]int,
-	ReceiveNewMsgChan chan ownVar.Elevator_s) {
+	exitImNewChan chan<- int,
+	startElevatorProgram chan<- int,
+	ordersWhenNewChan chan<- [N_BUTTONTYPES][N_FLOORS]int,
+	ReceiveNewMsgChan <-chan ownVar.Elevator_s) {
 	//Start of function
 
 	//Variables
@@ -170,15 +159,12 @@ func Handle_msg_when_new(
 				finished = true
 				break
 			}
-
 		}
 		if finished {
 			break
 		}
-
 	}
 	fmt.Println("finished handle msg")
-
 }
 
 func emptyCommandOrderList() [N_FLOORS]int {
@@ -187,43 +173,4 @@ func emptyCommandOrderList() [N_FLOORS]int {
 		list[i] = 0
 	}
 	return list
-
 }
-
-/*func Recover_lost_elevator(
-	passElevators chan chan map[string]ownVar.Elevator_s,
-	passLostElevators chan chan map[string]ownVar.Elevator_s) {
-	//Start of function
-
-	//Channels
-	passElevatorsChan := make(chan map[string]ownVar.Elevator_s)
-	passLostElevatorsChan := make(chan map[string]ownVar.Elevator_s)
-
-	//Variables
-	elevators := make(map[string]ownVar.Elevator_s)
-	lostElevators := make(map[string]ownVar.Elevator_s)
-
-	//Do
-	for {
-		select {
-		case passElevators <- passElevatorsChan:
-			elevators = <-passElevatorsChan
-		case passLostElevators <- passLostElevatorsChan:
-			lostElevators = <-passLostElevatorsChan
-
-		default:
-			for _, elev := range elevators {
-				for _, lostelev := range lostElevators {
-					if elev.Ip == lostelev.Ip {
-
-					}
-				}
-			}
-		}
-	}
-}
-
-func Update_lost_elevator(lostElev ownVar.Elevator_s, updateLostElevatorChan chan ownVar.Elevator_s) {
-
-}
-*/

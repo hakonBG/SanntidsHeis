@@ -27,13 +27,3 @@ func Json_decode_order(orderB []byte) ownVar.Order_call_s {
 	return order
 }
 
-func Json_encode_orderArray(orderArray [N_BUTTONTYPES][N_FLOORS]int) []byte {
-	orderArrayB, _ := json.Marshal(orderArray)
-	return []byte(orderArrayB)
-}
-
-func Json_decode_orderArray(orderArrayB []byte) [N_BUTTONTYPES][N_FLOORS]int {
-	var orderArray [N_BUTTONTYPES][N_FLOORS]int
-	json.Unmarshal(orderArrayB, &orderArray)
-	return orderArray
-}

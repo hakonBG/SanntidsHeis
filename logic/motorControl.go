@@ -14,13 +14,12 @@ const (
 	DURATION_DOOR_OPEN = 2
 )
 
-//Equal as the type in communication
-
+//Controls motor based on elevators local orders
 func Motor_control(
-	passOrders chan chan ownVar.Orders_s,
-	floorSensorChan chan int,
-	removeOrderElevChan chan ownVar.Order_call_s,
-	selfElevatorChan chan ownVar.Elevator_s) {
+	passOrders chan<- chan ownVar.Orders_s,
+	floorSensorChan <-chan int,
+	removeOrderElevChan chan<- ownVar.Order_call_s,
+	selfElevatorChan chan<- ownVar.Elevator_s) {
 	//Start of function
 
 	//Channels
@@ -38,6 +37,7 @@ func Motor_control(
 	readyToGo := true
 	timeCheckpoint := time.Now().Add(-3 * time.Second)
 
+	//Do
 	for {
 		select {
 		case currentFloor = <-floorSensorChan:
@@ -56,6 +56,7 @@ func Motor_control(
 				elevator.Moving = false
 				timeCheckpoint = time.Now()
 
+				//Routine for deleting correct order
 				if direction == ownVar.UP {
 					if orders.LocalOrders[BUTTON_CALL_UP][currentFloor] == 1 {
 						orderCall.OrderType = ownVar.GLOBAL
@@ -101,7 +102,6 @@ func Motor_control(
 			}
 			if time.Now().After(timeCheckpoint.Add(DURATION_DOOR_OPEN * time.Second)) {
 				driver.Elev_set_door_open_lamp(0)
-				//fmt.Printf("Direction: %d\n", direction)
 				readyToGo = true
 			} else {
 				readyToGo = false
@@ -110,7 +110,6 @@ func Motor_control(
 			}
 
 		case passOrders <- passOrdersChan:
-			//fmt.Println("MotorOrders")
 			orders = <-passOrdersChan
 			elevator.Orders[BUTTON_COMMAND] = orders.LocalOrders[BUTTON_COMMAND]
 			elevator.Orders[BUTTON_CALL_UP] = orders.GlobalOrders[BUTTON_CALL_UP]
@@ -119,7 +118,6 @@ func Motor_control(
 		case selfElevatorChan <- elevator:
 
 		}
-
 	}
 }
 
@@ -226,5 +224,4 @@ func Init_elevator() {
 		<-time.After(25 * time.Millisecond)
 		driver.Elev_set_speed(0)
 	}
-
 }

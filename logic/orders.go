@@ -16,17 +16,17 @@ const (
 )
 
 func Handle_orders(
-	addOrderElevChan chan ownVar.Order_call_s,
-	addOrderUDPChan chan ownVar.Order_call_s,
-	addOrderCostChan chan ownVar.Order_call_s,
-	removeOrderElevChan chan ownVar.Order_call_s,
-	removeOrderUDPChan chan ownVar.Order_call_s,
-	removeOrderCostChan chan ownVar.Order_call_s,
-	passOrders chan chan ownVar.Orders_s,
-	pushAddGlobalOrderChan chan ownVar.Order_call_s,
-	pushRemoveGlobalOrderChan chan ownVar.Order_call_s,
-	ordersWhenNewChan chan [N_BUTTONTYPES][N_FLOORS]int,
-	newGlobalOrdersChan chan [N_GLOBALBUTTONTYPES][N_FLOORS]int) {
+	addOrderElevChan <-chan ownVar.Order_call_s,
+	addOrderUDPChan <-chan ownVar.Order_call_s,
+	addOrderCostChan <-chan ownVar.Order_call_s,
+	removeOrderElevChan <-chan ownVar.Order_call_s,
+	removeOrderUDPChan <-chan ownVar.Order_call_s,
+	removeOrderCostChan <-chan ownVar.Order_call_s,
+	passOrders <-chan chan ownVar.Orders_s,
+	pushAddGlobalOrderChan chan<- ownVar.Order_call_s,
+	pushRemoveGlobalOrderChan chan<- ownVar.Order_call_s,
+	ordersWhenNewChan <-chan [N_BUTTONTYPES][N_FLOORS]int,
+	newGlobalOrdersChan <-chan [N_GLOBALBUTTONTYPES][N_FLOORS]int) {
 	//Start of function
 
 	//Channels
@@ -42,7 +42,7 @@ func Handle_orders(
 	var systemOrders [N_BUTTONTYPES][N_FLOORS]int
 	var newGlobalOrders [N_GLOBALBUTTONTYPES][N_FLOORS]int
 
-	//CHeck if allready orders in system
+	//CHeck if allready global orders in system
 	select {
 	case systemOrders = <-ordersWhenNewChan:
 		fmt.Println("Fikk ordre")

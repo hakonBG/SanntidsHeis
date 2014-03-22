@@ -78,9 +78,7 @@ func Get_own_ip() string {
 		}
 		googleConn, err = net.DialTCP("tcp", nil, googleAddress)
 	}
-
 	Ip := strings.Split(googleConn.LocalAddr().String(), ":")[0]
 	googleConn.Close()
 	return Ip
-
 }

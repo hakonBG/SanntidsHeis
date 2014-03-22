@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	N_SPAM = 5
+	N_SPAM = 10
 )
 
-func Receive_elevator(addElevatorChan chan ownVar.Elevator_s) {
+func Receive_elevator(addElevatorChan chan<- ownVar.Elevator_s) {
 	elevatorReadSocket := Set_up_udp_readSocket(ELEVATOR_STRUCT_PORT)
 
 	var elevator ownVar.Elevator_s
@@ -23,11 +23,10 @@ func Receive_elevator(addElevatorChan chan ownVar.Elevator_s) {
 		elevator.Ip = connAddress
 		elevator.LastTime = time.Now()
 		addElevatorChan <- elevator
-
 	}
 }
 
-func Push_elevator(selfElevatorChan chan ownVar.Elevator_s) {
+func Push_elevator(selfElevatorChan <-chan ownVar.Elevator_s) {
 	elevatorSendSocket := Set_up_udp_sendSocket(ELEVATOR_STRUCT_PORT)
 	var elevator ownVar.Elevator_s
 	var sendMsg []byte
@@ -35,18 +34,15 @@ func Push_elevator(selfElevatorChan chan ownVar.Elevator_s) {
 	for {
 
 		elevator = <-selfElevatorChan
-		fmt.Println("pushin elev")
 		sendMsg = Json_encode_elevator(elevator)
 		Udp_send_msg(elevatorSendSocket, sendMsg)
-		<-time.After(75 * time.Millisecond)
-
+		<-time.After(25 * time.Millisecond)
 	}
-
 }
 
 func Receive_add_global_order(
-	addOrderUDPChan chan ownVar.Order_call_s,
-	passOrders chan chan ownVar.Orders_s) {
+	addOrderUDPChan chan<- ownVar.Order_call_s,
+	passOrders chan<- chan ownVar.Orders_s) {
 	//Function Start
 
 	//Channels
@@ -74,17 +70,13 @@ func Receive_add_global_order(
 					orders.GlobalOrders[orderCall.ButtonType][orderCall.Floor] = 1
 					addOrderUDPChan <- orderCall
 				}
-
 			}
 		}
-
 	}
-
 }
 func Receive_remove_global_order(
-	removeOrderUDPChan chan ownVar.Order_call_s,
-	passOrders chan chan ownVar.Orders_s) {
-
+	removeOrderUDPChan chan<- ownVar.Order_call_s,
+	passOrders chan<- chan ownVar.Orders_s) {
 	//Start of function
 
 	//Channels
@@ -103,6 +95,7 @@ func Receive_remove_global_order(
 		select {
 		case passOrders <- passOrdersChan:
 			orders = <-passOrdersChan
+		default:
 			msgOrder, address = Udp_receive_msg(globalOrderReadRemoveSocket)
 			fmt.Println("recieved")
 			if address != ownIp {
@@ -113,14 +106,11 @@ func Receive_remove_global_order(
 					removeOrderUDPChan <- orderCall
 				}
 			}
-
 		}
-
 	}
-
 }
 
-func Push_add_global_order(pushAddGlobalOrderChan chan ownVar.Order_call_s) {
+func Push_add_global_order(pushAddGlobalOrderChan <-chan ownVar.Order_call_s) {
 
 	globalOrderSendAddSocket := Set_up_udp_sendSocket(ADD_GLOBAL_ORDER_PORT)
 	var orderCall ownVar.Order_call_s
@@ -131,12 +121,12 @@ func Push_add_global_order(pushAddGlobalOrderChan chan ownVar.Order_call_s) {
 		fmt.Println("push add")
 		for i := 0; i < N_SPAM; i++ {
 			Udp_send_msg(globalOrderSendAddSocket, sendMsg)
+			<-time.After(5 * time.Millisecond)
 		}
 	}
-
 }
 
-func Push_remove_global_order(pushRemoveGlobalOrderChan chan ownVar.Order_call_s) {
+func Push_remove_global_order(pushRemoveGlobalOrderChan <-chan ownVar.Order_call_s) {
 	globalOrderSendRemoveSocket := Set_up_udp_sendSocket(REMOVE_GLOBAL_ORDER_PORT)
 	var orderCall ownVar.Order_call_s
 	var sendMsg []byte
@@ -148,8 +138,7 @@ func Push_remove_global_order(pushRemoveGlobalOrderChan chan ownVar.Order_call_s
 		sendMsg = Json_encode_order(orderCall)
 		for i := 0; i < N_SPAM; i++ {
 			Udp_send_msg(globalOrderSendRemoveSocket, sendMsg)
+			<-time.After(5 * time.Millisecond)
 		}
 	}
 }
-
-//func Update_lost_elevator()

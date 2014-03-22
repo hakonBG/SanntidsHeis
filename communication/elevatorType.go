@@ -43,13 +43,7 @@ func Handle_elevators(
 			delete(elevators, elev.Ip)
 			lostElevators[elev.Ip] = elev
 		}
-		/*
-			for _, elev := range elevators {
-				fmt.Println(elev.Ip)
-			}*/
-
 	}
-
 }
 
 func initializeElevator(ip string) ownVar.Elevator_s {

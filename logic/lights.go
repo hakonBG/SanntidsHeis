@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Adjust_lights(passOrders chan chan ownVar.Orders_s) {
+func Adjust_lights(passOrders chan<- chan ownVar.Orders_s) {
 	var orders ownVar.Orders_s
 	lightOrders := make(chan ownVar.Orders_s)
 	for {
@@ -19,10 +19,9 @@ func Adjust_lights(passOrders chan chan ownVar.Orders_s) {
 			set_lights(orders)
 		}
 		<-time.After(25 * time.Millisecond)
-
 	}
-
 }
+
 func set_lights(orders ownVar.Orders_s) {
 
 	for i := 0; i < N_FLOORS; i++ {
@@ -33,7 +32,5 @@ func set_lights(orders ownVar.Orders_s) {
 			driver.Elev_set_button_lamp(driver.BUTTON_CALL_DOWN, i, orders.GlobalOrders[BUTTON_CALL_DOWN][i])
 		}
 		driver.Elev_set_button_lamp(driver.BUTTON_COMMAND, i, orders.LocalOrders[BUTTON_COMMAND][i])
-
 	}
-
 }
